@@ -8,43 +8,361 @@
   <script src="OBJLoader.js"></script>
   <script src="Detector.js"></script>
   <script src="dynamictexture.js"></script>
+  <script src="panel-map.js"></script>
   <!--<script src="http://mrdoob.github.com/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>-->
+
+  <style type="text/css">
+    /*noinspection CssUnusedSymbol*/
+    #render-container {
+      margin: 5px;
+    }
+
+    #info {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      font: 10pt Monaco, monospace;
+      z-index: 1;
+      white-space: pre-wrap;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .panel-label {
+      position: absolute;
+      /*text-align: center;*/
+      /*padding: 3px;*/
+      /*background-color: white;*/
+      /*border: 1px solid black;*/
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      text-shadow: 0 0 6px white, 0 0 6px white, 0 0 6px white;
+
+      transform: translate(-50%, -50%);
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .panel-label.hidden {
+      display: none;
+    }
+
+    .panel-label div {
+      width: auto;
+      text-align: center;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .panel-label .name {
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .panel-label .section {
+      font-size: 0.7em;
+    }
+
+  </style>
 </head>
 <body>
 
+<div id="info">
+  <b>Camera Position: </b> <span id="camera-position"></span>
+  <b>Camera Direction:</b> <span id="camera-direction"></span>
+  <span id="panel-misc-info-1"></span>
+  <span id="panel-misc-info-2"></span>
+</div>
+<!--<b>Panel 7D Direction:</b> <span id="panel-7d-direction"></span>-->
+<!--<b>Panel 7P Direction:</b> <span id="panel-7p-direction"></span>-->
+<!--<b>Panel 17D Direction:</b> <span id="panel-17d-direction"></span>-->
+<!--<b>Panel 17P Direction:</b> <span id="panel-17p-direction"></span>-->
+
 <script type="application/javascript">
+  function Panels() {
+    this.panels = {};
+    this.vertices = [];
+    this.verticesByKey = {};
+    this.panelsByEdge = {};
+  }
+
+  Panels.prototype.all = function () {
+    var panels = this.panels;
+    var all = [];
+    Object.keys(panels).forEach(function (name) {
+      all.push(panels[name]);
+    });
+    return all;
+  };
+
+  Panels.prototype.add = function (panel) {
+    if (this.panels[panel.name]) {
+      throw "Huh! We already have a " + panel.name + "!";
+    }
+    this.panels[panel.name] = panel;
+
+//    if (panel.name == '37D')
+    this.inventory(panel);
+  };
+
+  Panels.prototype.inventory = function (panel) {
+    var self = this;
+    var localVertexIds = panel.geometry.vertices.map(function (vertex) {
+      return self.localVertexIdFor(vertex);
+    });
+
+    var seenSegments = {};
+    var outlineSegments = [];
+    var segmentsByKey = {};
+
+    function check(v1, v2) {
+      var segmentIds = [localVertexIds[v1], localVertexIds[v2]].sort();
+      var segmentKey = segmentIds[0] + "," + segmentIds[1];
+      segmentsByKey[segmentKey] = segmentIds;
+      if (seenSegments[segmentKey]) {
+        var i = outlineSegments.indexOf(segmentKey);
+        if (i != -1) outlineSegments.splice(i, 1);
+      } else {
+        outlineSegments.push(segmentKey);
+        seenSegments[segmentKey] = true;
+      }
+    }
+
+    panel.geometry.faces.forEach(function (face) {
+      check(face.a, face.b);
+      check(face.b, face.c);
+      check(face.c, face.a);
+    });
+
+//    console.log("Outline for " + panel.name + ":", outlineSegments);
+
+    var lineGroup = new THREE.Group();
+    var lineColor = panel.color.clone().multiplyScalar(1.25);
+    var material = new THREE.LineBasicMaterial({color: lineColor, linewidth: 4});
+    outlineSegments.forEach(function (segmentKey) {
+      var outlineGeometry = new THREE.Geometry();
+      var segmentIds = segmentKey.split(",");
+      var v1 = self.getVertexByLocalId(segmentIds[0]);
+      var v2 = self.getVertexByLocalId(segmentIds[1]);
+      outlineGeometry.vertices.push(v1);
+      outlineGeometry.vertices.push(v2);
+      lineGroup.add(new THREE.Line(outlineGeometry, material));
+    });
+    panel.outline = lineGroup;
+
+    outlineSegments.forEach(function (segmentKey) {
+      var panelsForEdge = self.panelsByEdge[segmentKey];
+      if (panelsForEdge == null) {
+        panelsForEdge = [];
+        self.panelsByEdge[segmentKey] = panelsForEdge;
+      }
+      panelsForEdge.push(panel);
+    });
+  };
+
+  Panels.prototype.localVertexIdFor = function (vertex) {
+    var vertexKey = vertex.x + ',' + vertex.y + ',' + vertex.z;
+    var localId = this.verticesByKey[vertexKey];
+    if (localId == null) {
+      localId = this.vertices.length;
+      this.vertices.push(vertex);
+      this.verticesByKey[vertexKey] = localId;
+    }
+    return localId;
+  };
+
+  Panels.prototype.getVertexByLocalId = function (id) {
+    return this.vertices[id];
+  };
+
+  function Panel(mesh) {
+    this.mesh = mesh;
+    this.name = mesh.name;
+    this.info = panelInfos[this.name];
+
+    var label = document.createElement('div');
+    label.className = 'panel-label';
+    label.innerHTML = '<div class="name">' + this.name + "</div>";
+    if (this.info) {
+      label.innerHTML += '<div class="section">' + this.info.section + '</div>';
+    }
+    container.appendChild(label);
+
+    this.geometry = mesh.geometry;
+
+    this.label = label;
+
+    if (this.info) {
+      this.color = new THREE.Color(BAAAHS.Geometry.SECTION_COLORS[this.info.section]);
+    } else {
+      this.color = new THREE.Color("#ffffff");
+    }
+  }
+
+  Panel.prototype.updateStyle = function () {
+    this.mesh.material.side = THREE.DoubleSide;
+
+    this.mesh.material.color = this.color;
+
+    if (this.outline) this.mesh.parent.add(this.outline);
+  };
+
+  Panel.prototype.getCentroid = function () {
+    var centroid = new THREE.Vector3();
+    var vertexCount = 0;
+    for (var i = 0; i < this.mesh.geometry.vertices.length; i++) {
+      centroid.add(this.mesh.geometry.vertices[i]);
+      vertexCount++;
+    }
+    centroid.divideScalar(vertexCount);
+    return centroid;
+  };
+
+  Panel.prototype.hideLabel = function () {
+    if (!this.label.classList.contains('hidden')) {
+      this.label.classList.add('hidden');
+    }
+  };
+
+  Panel.prototype.showLabel = function () {
+    if (this.label.classList.contains('hidden')) {
+      this.label.classList.remove('hidden');
+    }
+  };
+
+  Panel.prototype.positionLabel = function () {
+//    if (this.name.indexOf('P') > -1) {
+//      this.hideLabel();
+//      return;
+//    }
+
+    var center = this.mesh.localToWorld(this.getCentroid());
+    this.geometry.computeBoundingBox();
+    var box = this.geometry.boundingBox;
+    var boxMin = toScreenPosition(box.min);
+    var boxMax = toScreenPosition(box.max);
+    boxMin = new THREE.Vector2(boxMin.x, boxMin.y);
+    boxMax = new THREE.Vector2(boxMax.x, boxMax.y);
+    var boxSize = Math.sqrt(boxMax.distanceToSquared(boxMin));
+
+    if (this.name == '7D') {
+      document.getElementById('panel-misc-info-1').innerText =
+          'topleft: ' + boxMin.x + ", " + boxMin.y + "\n" +
+          'botrght: ' + boxMax.x + ", " + boxMax.y + "\n" +
+          'dist: ' + boxSize;
+    } else if (this.name == '7P') {
+      document.getElementById('panel-misc-info-2').innerText =
+          'topleft: ' + boxMin.x + ", " + boxMin.y + "\n" +
+          'botrght: ' + boxMax.x + ", " + boxMax.y + "\n" +
+          'dist: ' + boxSize;
+    }
+
+    var fontSize = (boxSize / 400 * 18).toFixed();
+    fontSize = Math.min(fontSize, 36);
+//    var size = box.max.clone().sub(box.min);
+    var centerPixels = toScreenPosition(center);
+
+    this.label.style.left = centerPixels.x + 'px';
+    this.label.style.top = centerPixels.y + 'px';
+
+    var normalMatrix = new THREE.Matrix3().getNormalMatrix(this.mesh.matrixWorld);
+
+    this.mesh.geometry.computeFaceNormals();
+    var v = new THREE.Vector3(0);
+    this.mesh.geometry.faces.forEach(function (face) {
+      v.add(face.normal);
+    });
+    v.divideScalar(this.mesh.geometry.faces.length);
+
+    var worldNormal = v.clone().applyMatrix3(normalMatrix).normalize();
+    var cameraDirection = camera.getWorldDirection();
+    var dot = worldNormal.clone().dot(cameraDirection);
+    if (dot > -0.5) {
+      this.hideLabel();
+    } else {
+      this.showLabel();
+    }
+
+//    if (this.name == '7D') {
+//      document.getElementById('panel-7d-direction').innerText = dot;
+//    } else if (this.name == '7P') {
+//      document.getElementById('panel-7p-direction').innerText = dot;
+//    } else if (this.name == '17D') {
+//      document.getElementById('panel-17d-direction').innerText = dot;
+//    } else if (this.name == '17P') {
+//      document.getElementById('panel-17p-direction').innerText = dot;
+//    }
+
+    var camDist = camera.position.clone().distanceToSquared(center);
+//    var fontSize = 1000000.0 / camDist / 18;
+//    if (this.name == '7D') console.log("world normal for " + this.name + ":", v, cameraDirection, '...', dot, '__', fontSize);
+//    if (this.name == '7D') console.log('cam dist for ' + this.name + ' is ' + camDist / 1000, boxSize, fontSize);
+    this.label.style.fontSize = fontSize + 'pt';
+  };
+
+
+  function PanelInfo(id, side, section) {
+    this.name = id;
+    this.id = id;
+    this.side = side;
+    this.section = section;
+  }
+
+  var panelInfos = {};
+  for (var i in BAAAHS.Geometry.PANEL_MAP) {
+    var panelInfoA = BAAAHS.Geometry.PANEL_MAP[i];
+    var panelInfo = new PanelInfo(panelInfoA[0], panelInfoA[1], panelInfoA[2]);
+    panelInfos[panelInfo.name] = panelInfo;
+  }
+
   var container;
-  var camera, scene, renderer;
+
+  var camera, controls, scene, renderer;
   var mouseX = 0, mouseY = 0;
 
-  var windowHalfX = window.innerWidth / 2;
-  var windowHalfY = window.innerHeight / 2;
+  var lookAt = new THREE.Vector3(0, 0, 0);
+  console.log('lookat', lookAt);
+
+  var windowX = window.innerWidth;
+  var windowY = window.innerHeight - 200;
+  var windowHalfX = windowX / 2;
+  var windowHalfY = windowY / 2;
+
+  var panels = new Panels();
+  document.panels = panels;
+  var raycaster = new THREE.Raycaster();
 
   init();
-  animate();
+
+  function toScreenPosition(vector) {
+//    var vector = new THREE.Vector3();
+
+//    obj.updateMatrixWorld();
+//    vector.setFromMatrixPosition(obj.matrixWorld);
+    vector.project(camera);
+
+    var widthHalf = 0.5 * renderer.context.canvas.width;
+    var heightHalf = 0.5 * renderer.context.canvas.height;
+    vector.x = ( vector.x * widthHalf ) + widthHalf;
+    vector.y = -( vector.y * heightHalf ) + heightHalf;
+
+    return {x: vector.x, y: vector.y};
+  }
+
 
   /*** Initialize ***/
   function init() {
     // This <div> will host the canvas for our scene.
     container = document.createElement('div');
+    container.id = 'render-container';
+
     document.body.appendChild(container);
 
     // You can adjust the cameras distance and set the FOV to something
     // different than 45°. The last two values set the clippling plane.
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
-    camera.position.z = 500;
-    camera.position.x = -300;
+    camera = new THREE.PerspectiveCamera(45, windowX / windowY, 1, 2000);
+    camera.position.z = 400;
+//    camera.position.x = 200;
 //    camera.position.y = -100;
-
-    // These variables set the camera behaviour and sensitivity.
-    controls = new THREE.TrackballControls(camera);
-    controls.rotateSpeed = 5.0;
-    controls.zoomSpeed = 5;
-    controls.panSpeed = 2;
-    controls.noZoom = false;
-    controls.noPan = false;
-    controls.staticMoving = true;
-    controls.dynamicDampingFactor = 0.3;
 
     // This is the scene we will add all objects to.
     scene = new THREE.Scene();
@@ -52,8 +370,12 @@
     // You can set the color of the ambient light to any value.
     // I have chose a completely white light because I want to paint
     // all the shading into my texture. You propably want something darker.
-    var ambient = new THREE.AmbientLight(0xffffff);
+    var ambient = new THREE.AmbientLight(0x333333);
     scene.add(ambient);
+
+    var light = new THREE.HemisphereLight(0xeeeeee, 0x080820, 1);
+    scene.add(light);
+
 
     // Uncomment these lines to create a simple directional light.
     // var directionalLight = new THREE.DirectionalLight( 0xffeedd );
@@ -67,18 +389,6 @@
     };
     var texture = new THREE.Texture();
     var loader = new THREE.ImageLoader(manager);
-
-    // You can set the texture properties in this function.
-    // The string has to be the path to your texture file.
-//    loader.load('female_croupier_2013-04-11.png', function (image) {
-//      texture.image = image;
-//      texture.needsUpdate = true;
-//      // I wanted a nearest neighbour filtering for my low-poly character,
-//      // so that every pixel is crips and sharp. You can delete this lines
-//      // if have a larger texture and want a smooth linear filter.
-//      texture.magFilter = THREE.NearestFilter;
-//      texture.minFilter = THREE.NearestMipMapLinearFilter;
-//    });
 
     /*** OBJ Loading ***/
     var loader = new THREE.OBJLoader(manager);
@@ -169,160 +479,48 @@
 
 
       return texture;
-
-//      var material = new THREE.MeshBasicMaterial({
-//        map : texture
-//      });
-//
-//      var mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvas.width, canvas.height), material);
-//      // mesh.overdraw = true;
-//      mesh.doubleSided = true;
-//      mesh.position.x = x - canvas.width;
-//      mesh.position.y = y - canvas.height;
-//      mesh.position.z = z;
-//
-//      return mesh;
     }
 
-    var panels = {};
-    document.panels = panels;
+    // We set the renderer to the size of the window and
+    // append a canvas to our HTML page.
+    renderer = new THREE.WebGLRenderer();
+    renderer.setClearColor(0xffffff, 1);
+    renderer.setSize(windowX, windowY);
+    container.appendChild(renderer.domElement);
+
+    // These variables set the camera behaviour and sensitivity.
+    controls = new THREE.TrackballControls(camera, container);
+    controls.rotateSpeed = 5.0;
+    controls.zoomSpeed = 5;
+    controls.panSpeed = 2;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
 
     // As soon as the OBJ has been loaded this function looks for a mesh
     // inside the data and applies the texture to it.
-    var modelUrl = 'model.obj';
+    var modelUrl = 'export-from-model.obj';
     if (document.location.hostname.indexOf("github") != 0) modelUrl = '../' + modelUrl;
     loader.load(modelUrl, function (event) {
       var object = event;
-      console.log(object);
+//      console.log(object);
 
       var centroid = new THREE.Vector3();
       var vertexCount = 0;
 
       object.traverse(function (child) {
 //        console.log(child);
-        function randomColor() {
-          var hexPart = '000000' + Math.floor(Math.random() * 16777215).toString(16);
-//          var hexPart = '000000' + Math.floor(Math.random() * 65536).toString(16);
-          return '#' + hexPart.substr(hexPart.length - 6);
-        }
-
         if (child instanceof THREE.Mesh) {
-//          child.material.map = texture;
-
-//          var dynamicTexture  = new THREEx.DynamicTexture(512,512);
-
-          var panelColor = randomColor();
-
-          child.material = new THREE.MeshBasicMaterial({
-//            color: panelColor,
-            map: createLabel(child.name, 0, 0, 0, 10, "0x003300", panelColor)
-//            map: dynamicTexture.texture
-          });
-          child.material.side = THREE.DoubleSide;
-
           child.geometry = new THREE.Geometry().fromBufferGeometry(child.geometry);
-
-//          child.geometry.faceVertexUvs = [
-//            new THREE.Vector2(0, .666),
-//            new THREE.Vector2(.5, .666),
-//            new THREE.Vector2(.5, 1),
-//            new THREE.Vector2(0, 1)
-//          ];
-
           child.geometry.computeFaceNormals();
-//          child.geometry.computeVertexNormals();
-//          child.geometry.center();
 
-//          var material = new THREE.MeshBasicMaterial({
-//            map : texture
-//          });
-//          material.side = THREE.DoubleSide;
-//
-//          var mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvas.width, canvas.height), material);
-//          // mesh.overdraw = true;
-//          mesh.doubleSided = true;
-//          mesh.position.x = x - canvas.width;
-//          mesh.position.y = y - canvas.height;
-//          mesh.position.z = z;
-//          scene.add(mesh);
-
-
-
-
-
-          for (var i = 0; i < child.geometry.vertices.length; i++) {
-            centroid.add(child.geometry.vertices[i]);
-            vertexCount++;
-          }
-
-          var normalizeFace = function(geometry, face) {
-            var v1 = geometry.vertices[face.a];
-            var v2 = geometry.vertices[face.b];
-            var v3 = geometry.vertices[face.c];
-
-            var vt2 = new THREE.Vector3()
-          };
-
-          var assignUVs = function( geometry ){
-            geometry.computeBoundingBox();
-            geometry.computeFaceNormals();
-
-            var max     = geometry.boundingBox.max;
-            var min     = geometry.boundingBox.min;
-
-            var offset  = new THREE.Vector2(0 - min.z, 0 - min.y);
-            var range   = new THREE.Vector2(max.z - min.z, max.y - min.y);
-
-            geometry.faceVertexUvs[0] = [];
-            var faces = geometry.faces;
-
-            var avgNormal = new THREE.Vector3(0, 0, 0);
-            for (i = 0; i < geometry.faces.length ; i++) {
-              avgNormal.add(geometry.faces[i].normal);
-            }
-            avgNormal.divideScalar(geometry.faces.length);
-
-            for (i = 0; i < geometry.faces.length ; i++) {
-              var face = faces[i];
-              var v1 = geometry.vertices[face.a];
-              var v2 = geometry.vertices[face.b];
-              var v3 = geometry.vertices[face.c];
-
-              geometry.faceVertexUvs[0].push([
-                new THREE.Vector2( ( v1.z + offset.x ) / range.x , ( v1.y + offset.y ) / range.y ),
-                new THREE.Vector2( ( v2.z + offset.x ) / range.x , ( v2.y + offset.y ) / range.y ),
-                new THREE.Vector2( ( v3.z + offset.x ) / range.x , ( v3.y + offset.y ) / range.y )
-              ]);
-
-            }
-
-            geometry.uvsNeedUpdate = true;
-          };
-
-          assignUVs(child.geometry);
-          console.log(child.name, child.geometry.vertices.length, child.geometry.faces.length);
-
-
-//          child.geometry.faceVertexUvs = [[]];
-//          for (var i = 0; i < child.geometry.faces.length; i++) {
-//            child.geometry.faceVertexUvs[0].push(
-//              [new THREE.Vector2(1, 0), new THREE.Vector2(0, 1), new THREE.Vector2(0, 0)]
-//            );
-//          }
-//
-//          child.geometry.computeVertexNormals();
-//          child.geometry.computeFaceNormals();
-
-          if (panels[child.name]) {
-            console.log("Huh! We already have a " + child.name + "!")
-          }
-          panels[child.name] = child;
-
-//          var faces = child.geometry.faces;
-//          for (var face in faces) {
-//            console.log(face);
-//          }
+          panels.add(new Panel(child));
         }
+      });
+
+      panels.all().forEach(function (panel) {
+        panel.updateStyle();
       });
 
       // My initial model was too small, so I scaled it upwards.
@@ -331,11 +529,22 @@
       // You can change the position of the object, so that it is not
       // centered in the view and leaves some space for overlay text.
 
-      centroid.divideScalar(vertexCount);
+//      centroid.divideScalar(vertexCount);
 
-      object.position.x = 0 - centroid.x / 2;
-      object.position.y = 0 - centroid.y / 2;
-      object.position.z = 0 - centroid.z;
+      var bounds = new THREE.Box3().setFromObject(object);
+      var objCenter = bounds.center();
+      console.log('bounding box:', bounds, 'center:', objCenter);
+
+      object.position.x = 0 - objCenter.x;
+      object.position.y = 0;
+      object.position.z = 0 - objCenter.z;
+      lookAt.y = objCenter.y;
+
+      console.log("Sheep origin is", object.position);
+
+      camera.position.y = objCenter.y;
+//      camera.lookAt(lookAt);
+      controls.target = lookAt;
 
       scene.add(object);
     });
@@ -371,26 +580,53 @@
 ////    geom.computeTangents();
 //    var geomMesh = new THREE.Mesh(geom, material);
 //    scene.add(geomMesh);
-
-    // We set the renderer to the size of the window and
-    // append a canvas to our HTML page.
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight - 10);
-    container.appendChild(renderer.domElement);
   }
 
   /*** The Loop ***/
   function animate() {
-    // This function calls itself on every frame. You can for example change
-    // the objects rotation on every call to create a turntable animation.
-    requestAnimationFrame(animate);
-
     // On every frame we need to calculate the new camera position
     // and have it look exactly at the center of our scene.
     controls.update();
-    camera.lookAt(scene.position);
     renderer.render(scene, camera);
+
+    function fmtFloat(f, left, right) {
+      var str = f.toFixed(right);
+      while (str.length < left + right + 1) str = ' ' + str;
+
+      return str;
+    }
+    function vectorToString(vector) {
+      return "x: " + fmtFloat(vector.x, 3, 2) + "; y: " + fmtFloat(vector.y, 3, 2) + "; z: " + fmtFloat(vector.z, 3, 2);
+    }
+
+    document.getElementById('camera-position').innerText = vectorToString(camera.position);
+    document.getElementById('camera-direction').innerText = vectorToString(camera.getWorldDirection());
+
+    var frustum = new THREE.Frustum();
+    var cameraViewProjectionMatrix = new THREE.Matrix4();
+
+// every time the camera or objects change position (or every frame)
+
+    camera.updateMatrixWorld(); // make sure the camera matrix is updated
+    camera.matrixWorldInverse.getInverse(camera.matrixWorld);
+    cameraViewProjectionMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustum.setFromMatrix(cameraViewProjectionMatrix);
+
+// frustum is now ready to check all the objects you need
+
+    panels.all().forEach(function (panel) {
+//        if (frustum.intersectsObject(panel.mesh)) {
+      panel.positionLabel();
+//        } else {
+//          panel.hideLabel();
+//        }
+    });
+
+    // This function calls itself on every frame. You can for example change
+    // the objects rotation on every call to create a turntable animation.
+    requestAnimationFrame(animate);
   }
+  animate();
 </script>
 </body>
 </html>

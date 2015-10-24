@@ -350,45 +350,53 @@ THREE.TrackballControls = function ( object, domElement ) {
 
   // listeners
 
+    var lastMouseEvent = null;
+
   function keydown( event ) {
 
     if ( _this.enabled === false ) return;
 
-    window.removeEventListener( 'keydown', keydown );
+    //window.removeEventListener( 'keydown', keydown );
 
     _prevState = _state;
 
-    if ( _state !== STATE.NONE ) {
-
+      if (event.keyCode = 16 && lastMouseEvent != null) { // shift key
+          _state = STATE.PAN;
+          _panStart.copy( getMouseOnScreen( lastMouseEvent.pageX, lastMouseEvent.pageY ) );
+          _panEnd.copy(_panStart);
+      }
       return;
 
+    if ( _state !== STATE.NONE ) {
+      return;
     } else if ( event.keyCode === _this.keys[ STATE.ROTATE ] && !_this.noRotate ) {
-
       _state = STATE.ROTATE;
-
     } else if ( event.keyCode === _this.keys[ STATE.ZOOM ] && !_this.noZoom ) {
-
       _state = STATE.ZOOM;
-
-    } else if ( event.keyCode === _this.keys[ STATE.PAN ] && !_this.noPan ) {
-
+    } else if ( (event.keyCode === _this.keys[ STATE.PAN ] || event.shiftKey) && !_this.noPan ) {
       _state = STATE.PAN;
-
     }
-
   }
 
   function keyup( event ) {
 
     if ( _this.enabled === false ) return;
 
-    _state = _prevState;
+      if (event.keyCode = 16) { // shift key
+          _state = STATE.ROTATE;
+          _moveCurr.copy( getMouseOnCircle( event.pageX, event.pageY ) );
+          _movePrev.copy(_moveCurr);
+          return;
+      }
 
-    window.addEventListener( 'keydown', keydown, false );
+      _state = _prevState;
+
+    //window.addEventListener( 'keydown', keydown, false );
 
   }
 
   function mousedown( event ) {
+      lastMouseEvent = event;
 
     if ( _this.enabled === false ) return;
 
@@ -418,14 +426,15 @@ THREE.TrackballControls = function ( object, domElement ) {
 
     }
 
-    document.addEventListener( 'mousemove', mousemove, false );
-    document.addEventListener( 'mouseup', mouseup, false );
+  domElement.addEventListener( 'mousemove', mousemove, false );
+  domElement.addEventListener( 'mouseup', mouseup, false );
 
     _this.dispatchEvent( startEvent );
 
   }
 
   function mousemove( event ) {
+      lastMouseEvent = event;
 
     if ( _this.enabled === false ) return;
 
@@ -458,8 +467,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 
     _state = STATE.NONE;
 
-    document.removeEventListener( 'mousemove', mousemove );
-    document.removeEventListener( 'mouseup', mouseup );
+    domElement.removeEventListener( 'mousemove', mousemove );
+    domElement.removeEventListener( 'mouseup', mouseup );
     _this.dispatchEvent( endEvent );
 
   }

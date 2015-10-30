@@ -57,7 +57,7 @@ module BAAAHS
       end
 
       def is_panel?(e)
-        e.respond_to?(:name) && e.name =~ /^(F|R[DP]?)?\d+[DP]?$/ #&& e.typename == 'Group'
+        e.respond_to?(:name) && e.name =~ /^(F|R[DP]?)?\d+[AB]?[DP]?$/ #&& e.typename == 'Group'
       end
 
       def is_other_external_part?(e)

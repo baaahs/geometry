@@ -10,10 +10,12 @@
   <script src="dynamictexture.js"></script>
   <script src="panel-map.js"></script>
 
-  <script src="js/MapViewer.js"></script>
   <script src="js/Panels.js"></script>
   <script src="js/Panel.js"></script>
   <script src="js/PanelInfo.js"></script>
+
+  <script src="js/MapViewer.js"></script>
+  <script src="js/LabelViewer.js"></script>
   <!--<script src="http://mrdoob.github.com/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>-->
 
   <style type="text/css">
@@ -88,6 +90,111 @@
       font-size: 0.7em;
     }
 
+    /* LabelViewer stuff starts here */
+    .label {
+      width: 4in;
+      height: 1.5in;
+      border: 1px solid black;
+      margin: 0.0625in;
+      position: relative;
+      display: inline-flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      font-family:  "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+      overflow: hidden;
+    }
+
+    .label .name {
+      text-align: center;
+      width: auto;
+      font-size: 60pt;
+      font-weight: bold;
+      letter-spacing: -0.1em;
+      flex: 3;
+      line-height: 60%;
+      padding-top: 24pt;
+    }
+
+    .label .name3 {
+      transform: scaleX(.9);
+    }
+
+    .label .name4 {
+      transform: scaleX(.7);
+    }
+
+    .label .other {
+      position: absolute;
+      left: .25em;
+      top: 1.25em;
+      font-size: 30pt;
+      font-weight: normal;
+      letter-spacing: -0.1em;
+      padding: 0 .2em;
+      border: 1px solid black;
+    }
+
+    .label .other.opposite {
+      top: inherit;
+      bottom: 1.25em;
+    }
+
+    .label .other-arrow {
+      position: absolute;
+      left: 0;
+      font-size: 24pt;
+      font-weight: bold;
+      letter-spacing: -0.1em;
+    }
+
+    .label .other-arrow.opposite {
+      bottom: 0;
+    }
+
+    .label .section {
+      font-size: 18pt;
+      letter-spacing: normal;
+    }
+
+    .label .section8 {
+      transform: scaleX(.7);
+    }
+
+    .label .up {
+      position: absolute;
+      right: 0.5cm;
+      top: 0;
+      font-size: 48pt;
+      font-weight: normal;
+    }
+
+    .label .up .u {
+      position: absolute;
+      right: .8em;
+      top: 1em;
+      font-size: 24pt;
+      font-weight: normal;
+      color: #333333;
+    }
+
+    .label .up .p {
+      position: absolute;
+      left: .8em;
+      top: 1em;
+      font-size: 24pt;
+      font-weight: normal;
+      color: #333333;
+    }
+
+    .label .logo {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      opacity: .15;
+      width: 20%;
+      z-index: -1;
+    }
   </style>
 </head>
 <body>
@@ -132,7 +239,7 @@
 </div>
 
 <div id="labels-tab" class="tab">
-
+  <div id="label-render-container"></div>
 </div>
 
 <script type="application/javascript">
@@ -144,6 +251,9 @@
     }
   })();
 
+  var panels = new Panels();
+  panels.load('export-from-model.obj', go);
+
   var mapViewer = null;
   var labelViewer = null;
 
@@ -152,7 +262,7 @@
 
     if (name == 'map') {
       if (mapViewer == null) {
-        mapViewer = new MapViewer(document.getElementById('map-render-container'));
+        mapViewer = new MapViewer(panels, document.getElementById('map-render-container'));
 
         document.getElementById('show-panels-front').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('F', e.target.checked) });
         document.getElementById('show-panels-rear').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('R', e.target.checked) });
@@ -169,11 +279,11 @@
       }
     }
 
-//    if (name == 'label') {
-//      if (labelViewer == null) {
-//        labelViewer = new LabelViewer(document.getElementById('label-render-container'));
-//      }
-//    }
+    if (name == 'labels') {
+      if (labelViewer == null) {
+        labelViewer = new LabelViewer(panels, document.getElementById('label-render-container'));
+      }
+    }
 
    tabs.forEach(function(tabEl) {
       if (tabEl.id == name + '-tab') {
@@ -184,11 +294,10 @@
     });
   }
 
-  window.onhashchange = function() {
+  function go() {
     showTab(document.location.hash.substr(1));
-  };
-
-  showTab(document.location.hash.substr(1));
+  }
+  window.onhashchange = go;
 </script>
 </body>
 </html>

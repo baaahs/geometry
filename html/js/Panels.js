@@ -13,11 +13,49 @@ function Panels() {
     this.infos = panelInfos;
 }
 
+Panels.prototype.load = function (modelUrl, callback) {
+    var manager = new THREE.LoadingManager();
+    manager.onProgress = function (item, loaded, total) {
+        console.log(item, loaded, total);
+    };
+
+    /*** OBJ Loading ***/
+    var loader = new THREE.OBJLoader(manager);
+
+    if (document.location.hostname.indexOf("github") != 0) modelUrl = '../' + modelUrl;
+
+    loader.load(modelUrl, function (event) {
+        var object = event;
+        console.log('Loaded model:', object);
+        this.model = object;
+//      console.log(object);
+
+        object.traverse(function (child) {
+//        console.log(child);
+            if (child instanceof THREE.Mesh) {
+                child.geometry = new THREE.Geometry().fromBufferGeometry(child.geometry);
+                child.geometry.computeFaceNormals();
+
+                var info = this.infos[child.name];
+                var panel = new Panel(child, info);
+                this.add(panel);
+            }
+        }.bind(this));
+
+        this.all().forEach(function (panel) {
+            panel.updateStyle();
+        });
+
+        callback();
+    }.bind(this));
+};
+
 Panels.prototype.all = function () {
     var panels = this.panels;
     var all = [];
     Object.keys(panels).forEach(function (name) {
-        all.push(panels[name]);
+        var panel = panels[name];
+        if (panel.isPanel()) all.push(panel);
     });
     return all;
 };
@@ -102,6 +140,8 @@ Panels.prototype.inventory = function (panel) {
         }
         panelsForEdge.push(panel);
     });
+
+    panel.outlineSegments = outlineSegments;
 };
 
 Panels.prototype.localVertexIdFor = function (vertex) {

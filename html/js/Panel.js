@@ -35,7 +35,19 @@ function Panel(mesh, info) {
     } else {
         this.color = new THREE.Color("#ffffff");
     }
+
+    this.mesh.geometry.computeFaceNormals();
+    var v = new THREE.Vector3(0);
+    this.mesh.geometry.faces.forEach(function (face) {
+        v.add(face.normal);
+    });
+    v.divideScalar(this.mesh.geometry.faces.length);
+    this.normal = v;
 }
+
+Panel.prototype.isPanel = function () {
+    return this.name != 'Face' && this.name != 'Tail' && this.name.indexOf('Ear') == -1;
+};
 
 Panel.prototype.isSide = function () {
     return this.name.indexOf('F') == -1 && this.name.indexOf('R') == -1;
@@ -146,14 +158,8 @@ Panel.prototype.positionLabel = function (mapViewer) {
 
     var normalMatrix = new THREE.Matrix3().getNormalMatrix(this.mesh.matrixWorld);
 
-    this.mesh.geometry.computeFaceNormals();
-    var v = new THREE.Vector3(0);
-    this.mesh.geometry.faces.forEach(function (face) {
-        v.add(face.normal);
-    });
-    v.divideScalar(this.mesh.geometry.faces.length);
-
-    var worldNormal = v.clone().applyMatrix3(normalMatrix).normalize();
+    var panelNormal = this.normal;
+    var worldNormal = panelNormal.clone().applyMatrix3(normalMatrix).normalize();
     var cameraDirection = mapViewer.camera.getWorldDirection();
     var dot = worldNormal.clone().dot(cameraDirection);
     if (dot > -0.5) {
@@ -178,3 +184,28 @@ Panel.prototype.positionLabel = function (mapViewer) {
 //    if (this.name == '7D') console.log('cam dist for ' + this.name + ' is ' + camDist / 1000, boxSize, fontSize);
     this.label.style.fontSize = fontSize + 'pt';
 };
+
+Panel.prototype.edges = function (panels) {
+    return this.outlineSegments.map(function(segment) {
+        var segmentIds = segment.split(",");
+        var v1 = panels.getVertexByLocalId(segmentIds[0]).clone();
+        var v2 = panels.getVertexByLocalId(segmentIds[1]).clone();
+
+        return new Edge(this, v1, v2, panels.panelsByEdge[segment]);
+    }.bind(this));
+};
+
+function Edge(panel, v1, v2, allPanels) {
+    this.panel = panel;
+    this.v1 = v1;
+    this.v2 = v2;
+    this.allPanels = allPanels;
+
+    if (allPanels.length == 2) {
+        if (allPanels[0].name == panel.name) {
+            this.otherPanel = allPanels[1];
+        } else {
+            this.otherPanel = allPanels[0];
+        }
+    }
+}

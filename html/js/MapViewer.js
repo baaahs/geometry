@@ -1,11 +1,11 @@
-function MapViewer(container) {
+function MapViewer(panels, container) {
+    this.panels = panels;
+
     this.lookAt = new THREE.Vector3(0, 0, 0);
     console.log('lookat', this.lookAt);
 
     var windowX = window.innerWidth;
     var windowY = window.innerHeight - 200;
-
-    this.panels = new Panels();
 
     // This <div> will host the canvas for our scene.
     this.container = container;
@@ -35,15 +35,6 @@ function MapViewer(container) {
     // directionalLight.position.set( 0, 0, 1 ).normalize();
     // this.scene.add( directionalLight );
 
-    /*** Texture Loading ***/
-    var manager = new THREE.LoadingManager();
-    manager.onProgress = function (item, loaded, total) {
-        console.log(item, loaded, total);
-    };
-
-    /*** OBJ Loading ***/
-    var loader = new THREE.OBJLoader(manager);
-
     // We set the renderer to the size of the window and
     // append a canvas to our HTML page.
     this.renderer = new THREE.WebGLRenderer();
@@ -61,59 +52,36 @@ function MapViewer(container) {
     this.controls.staticMoving = true;
     this.controls.dynamicDampingFactor = 0.3;
 
-    // As soon as the OBJ has been loaded this function looks for a mesh
-    // inside the data and applies the texture to it.
-    var modelUrl = 'export-from-model.obj';
-    if (document.location.hostname.indexOf("github") != 0) modelUrl = '../' + modelUrl;
-    loader.load(modelUrl, function (event) {
-        var object = event;
-//      console.log(object);
+    this.panels.all().forEach(function (panel) {
+        this.container.appendChild(panel.label);
+    }.bind(this));
 
-        object.traverse(function (child) {
-//        console.log(child);
-            if (child instanceof THREE.Mesh) {
-                child.geometry = new THREE.Geometry().fromBufferGeometry(child.geometry);
-                child.geometry.computeFaceNormals();
-
-                var info = this.panels.infos[child.name];
-                var panel = new Panel(child, info);
-                this.container.appendChild(panel.label);
-                this.panels.add(panel);
-            }
-        }.bind(this));
-
-        this.panels.all().forEach(function (panel) {
-            panel.updateStyle();
-        });
-
-        // My initial model was too small, so I scaled it upwards.
+    // My initial model was too small, so I scaled it upwards.
 //      object.scale = new THREE.Vector3(25, 25, 25);
 
-        // You can change the position of the object, so that it is not
-        // centered in the view and leaves some space for overlay text.
+    // You can change the position of the object, so that it is not
+    // centered in the view and leaves some space for overlay text.
 
-//      centroid.divideScalar(vertexCount);
+    var model = this.panels.model;
+    var bounds = new THREE.Box3().setFromObject(model);
+    var objCenter = bounds.center();
+    console.log('bounding box:', bounds, 'center:', objCenter);
 
-        var bounds = new THREE.Box3().setFromObject(object);
-        var objCenter = bounds.center();
-        console.log('bounding box:', bounds, 'center:', objCenter);
+    model.position.x = 0 - objCenter.x;
+    model.position.y = 0;
+    model.position.z = 0 - objCenter.z;
+    this.lookAt.y = objCenter.y;
 
-        object.position.x = 0 - objCenter.x;
-        object.position.y = 0;
-        object.position.z = 0 - objCenter.z;
-        this.lookAt.y = objCenter.y;
+    console.log("Sheep origin is", model.position);
 
-        console.log("Sheep origin is", object.position);
-
-        this.camera.position.y = objCenter.y;
+    this.camera.position.y = objCenter.y;
 //      this.camera.lookAt(this.lookAt);
-        this.controls.target = this.lookAt;
+    this.controls.target = this.lookAt;
 
-        this.scene.add(object);
-    }.bind(this));
+    this.scene.add(model);
 }
 
-MapViewer.prototype.animate = function() {
+MapViewer.prototype.animate = function () {
     // On every frame we need to calculate the new camera position
     // and have it look exactly at the center of our scene.
     this.controls.update();
@@ -125,6 +93,7 @@ MapViewer.prototype.animate = function() {
 
         return str;
     }
+
     function vectorToString(vector) {
         return "x: " + fmtFloat(vector.x, 3, 2) + "; y: " + fmtFloat(vector.y, 3, 2) + "; z: " + fmtFloat(vector.z, 3, 2);
     }
@@ -159,7 +128,7 @@ MapViewer.prototype.animate = function() {
     }
 };
 
-MapViewer.prototype.startRendering = function() {
+MapViewer.prototype.startRendering = function () {
     if (this.renderAgain != true) {
         this.renderAgain = true;
 
@@ -167,11 +136,11 @@ MapViewer.prototype.startRendering = function() {
     }
 };
 
-MapViewer.prototype.stopRendering = function() {
+MapViewer.prototype.stopRendering = function () {
     this.renderAgain = false;
 };
 
-MapViewer.prototype.toScreenPosition = function(vector) {
+MapViewer.prototype.toScreenPosition = function (vector) {
 //    var vector = new THREE.Vector3();
 
 //    obj.updateMatrixWorld();

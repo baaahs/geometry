@@ -34,16 +34,16 @@ function Label(edge, angle) {
     this.edge = edge;
     this.panel = edge.panel;
 
-    var opposite = false;
+    var upperEdge = false;
 
     // no upside-downsies
     if (angle > 90) {
         angle -= 180;
-        opposite = true;
+        upperEdge = true;
     }
     if (angle < -90) {
         angle += 180;
-        opposite = true;
+        upperEdge = true;
     }
 
     this.dom = this.createDiv('label');
@@ -67,16 +67,16 @@ function Label(edge, angle) {
     if (edge.otherPanel && edge.otherPanel.isPanel()) {
         var otherPanelName = edge.otherPanel ? edge.otherPanel.name : '';
         var otherPanelDiv = this.createDiv('other', otherPanelName);
-        if (opposite) otherPanelDiv.classList.add('opposite');
+        if (!upperEdge) otherPanelDiv.classList.add('lower');
         otherPanelDiv.style.transform = 'rotate(' + angle + 'deg)';
         this.dom.appendChild(otherPanelDiv);
 
         var otherArrowPanelDiv = this.createDiv('other-arrow');
-        if (opposite) {
-            otherArrowPanelDiv.innerText = '⇩';
-            otherArrowPanelDiv.classList.add('opposite');
-        } else {
+        if (upperEdge) {
             otherArrowPanelDiv.innerText = '⇧';
+        } else {
+            otherArrowPanelDiv.innerText = '⇩';
+            otherArrowPanelDiv.classList.add('lower');
         }
         this.dom.appendChild(otherArrowPanelDiv);
     }

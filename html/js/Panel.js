@@ -82,10 +82,16 @@ Panel.prototype.updateStyle = function () {
 };
 
 Panel.prototype.getCentroid = function () {
+    //return this.geometry.vertices[0].clone();
+
+    //var box = new THREE.Box3();
+    //box.setFromPoints(this.geometry.vertices);
+    //return box.max.clone().sub(box.min).multiplyScalar(.5).add(box.min);
+
     var centroid = new THREE.Vector3();
     var vertexCount = 0;
-    for (var i = 0; i < this.mesh.geometry.vertices.length; i++) {
-        centroid.add(this.mesh.geometry.vertices[i]);
+    for (var i = 0; i < this.geometry.vertices.length; i++) {
+        centroid.add(this.geometry.vertices[i]);
         vertexCount++;
     }
     centroid.divideScalar(vertexCount);

@@ -3,6 +3,14 @@ function Panels() {
     this.vertices = [];
     this.verticesByKey = {};
     this.panelsByEdge = {};
+
+    var panelInfos = {};
+    for (var i in BAAAHS.Geometry.PANEL_MAP) {
+        var panelInfoA = BAAAHS.Geometry.PANEL_MAP[i];
+        var panelInfo = new PanelInfo(panelInfoA[0], panelInfoA[1], panelInfoA[2]);
+        panelInfos[panelInfo.name] = panelInfo;
+    }
+    this.infos = panelInfos;
 }
 
 Panels.prototype.all = function () {

@@ -1,7 +1,7 @@
-function Panel(mesh) {
+function Panel(mesh, info) {
     this.mesh = mesh;
     this.name = mesh.name;
-    this.info = panelInfos[this.name];
+    this.info = info;
     if (this.info == null) {
         console.log('No info for ' + this.name + '.');
     }
@@ -12,7 +12,6 @@ function Panel(mesh) {
     if (this.info) {
         label.innerHTML += '<div class="section">' + this.info.section + '</div>';
     }
-    container.appendChild(label);
 
     this.geometry = mesh.geometry;
 
@@ -110,7 +109,7 @@ Panel.prototype.showLabel = function () {
     //}
 };
 
-Panel.prototype.positionLabel = function () {
+Panel.prototype.positionLabel = function (mapViewer) {
 //    if (this.name.indexOf('P') > -1) {
 //      this.hideLabel();
 //      return;
@@ -119,8 +118,8 @@ Panel.prototype.positionLabel = function () {
     var center = this.mesh.localToWorld(this.getCentroid());
     this.geometry.computeBoundingBox();
     var box = this.geometry.boundingBox;
-    var boxMin = toScreenPosition(box.min);
-    var boxMax = toScreenPosition(box.max);
+    var boxMin = mapViewer.toScreenPosition(box.min);
+    var boxMax = mapViewer.toScreenPosition(box.max);
     boxMin = new THREE.Vector2(boxMin.x, boxMin.y);
     boxMax = new THREE.Vector2(boxMax.x, boxMax.y);
     var boxSize = Math.sqrt(boxMax.distanceToSquared(boxMin));
@@ -140,7 +139,7 @@ Panel.prototype.positionLabel = function () {
     var fontSize = (boxSize / 400 * 18).toFixed();
     fontSize = Math.min(fontSize, 36);
 //    var size = box.max.clone().sub(box.min);
-    var centerPixels = toScreenPosition(center);
+    var centerPixels = mapViewer.toScreenPosition(center);
 
     this.label.style.left = centerPixels.x + 'px';
     this.label.style.top = centerPixels.y + 'px';
@@ -155,7 +154,7 @@ Panel.prototype.positionLabel = function () {
     v.divideScalar(this.mesh.geometry.faces.length);
 
     var worldNormal = v.clone().applyMatrix3(normalMatrix).normalize();
-    var cameraDirection = camera.getWorldDirection();
+    var cameraDirection = mapViewer.camera.getWorldDirection();
     var dot = worldNormal.clone().dot(cameraDirection);
     if (dot > -0.5) {
         this.hideLabel();
@@ -173,7 +172,7 @@ Panel.prototype.positionLabel = function () {
 //      document.getElementById('panel-17p-direction').innerText = dot;
 //    }
 
-    var camDist = camera.position.clone().distanceToSquared(center);
+    //var camDist = mapViewer.camera.position.clone().distanceToSquared(center);
 //    var fontSize = 1000000.0 / camDist / 18;
 //    if (this.name == '7D') console.log("world normal for " + this.name + ":", v, cameraDirection, '...', dot, '__', fontSize);
 //    if (this.name == '7D') console.log('cam dist for ' + this.name + ' is ' + camDist / 1000, boxSize, fontSize);

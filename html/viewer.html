@@ -10,6 +10,7 @@
   <script src="dynamictexture.js"></script>
   <script src="panel-map.js"></script>
 
+  <script src="js/MapViewer.js"></script>
   <script src="js/Panels.js"></script>
   <script src="js/Panel.js"></script>
   <script src="js/PanelInfo.js"></script>
@@ -22,6 +23,17 @@
       position: relative;
     }
 
+    #tabs {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      z-index: 1;
+    }
+
+    .tab.hidden {
+      display: none;
+    }
+
     #info {
       position: absolute;
       right: 10px;
@@ -29,6 +41,14 @@
       font: 10pt Monaco, monospace;
       z-index: 1;
       white-space: pre-wrap;
+    }
+
+    #map-controls {
+      position: absolute;
+      left: 1em;
+      bottom: 1em;
+      border: 1px solid black;
+      padding: 0 .5em;
     }
 
     /*noinspection CssUnusedSymbol*/
@@ -72,363 +92,103 @@
 </head>
 <body>
 
-<div id="info">
-  <b>Camera Position: </b> <span id="camera-position"></span>
-  <b>Camera Direction:</b> <span id="camera-direction"></span>
-  <span id="panel-misc-info-1"></span>
-  <span id="panel-misc-info-2"></span>
+<div id="tabs">
+  <a href="#map">Map</a>
+  |
+  <a href="#labels">Labels</a>
 </div>
 
-<div id="controls">
-  <form>
-    <p>
-      Panels: <button id="show-panels">Show All</button>
-      <input type="checkbox" id="show-panels-front" checked/> <label for="show-panels-front">Front</label>
-      <input type="checkbox" id="show-panels-rear" checked/> <label for="show-panels-rear">Rear</label>
-      <input type="checkbox" id="show-panels-side" checked/> <label for="show-panels-side">Side</label>
-      <input type="checkbox" id="show-panels-party" checked/> <label for="show-panels-party">Party</label>
-      <input type="checkbox" id="show-panels-business" checked/> <label for="show-panels-business">Business</label>
-      |
-      <input type="checkbox" id="flip-panels"/> <label for="flip-panels">Flip</label>
-    </p>
+<div id="map-tab" class="tab">
+  <div id="map-render-container"></div>
 
-    <p>
-    </p>
-  </form>
+  <div id="info">
+    <b>Camera Position: </b> <span id="camera-position"></span>
+    <b>Camera Direction:</b> <span id="camera-direction"></span>
+    <span id="panel-misc-info-1"></span>
+    <span id="panel-misc-info-2"></span>
+  </div>
+
+  <div id="map-controls">
+    <form>
+      <p>
+        Panels: <button id="show-panels">Show All</button>
+        <input type="checkbox" id="show-panels-front" checked/> <label for="show-panels-front">Front</label>
+        <input type="checkbox" id="show-panels-rear" checked/> <label for="show-panels-rear">Rear</label>
+        <input type="checkbox" id="show-panels-side" checked/> <label for="show-panels-side">Side</label>
+        <input type="checkbox" id="show-panels-party" checked/> <label for="show-panels-party">Party</label>
+        <input type="checkbox" id="show-panels-business" checked/> <label for="show-panels-business">Business</label>
+        |
+        <input type="checkbox" id="flip-panels"/> <label for="flip-panels">Flip</label>
+      </p>
+
+      <p>
+      </p>
+    </form>
+  </div>
+  <!--<b>Panel 7D Direction:</b> <span id="panel-7d-direction"></span>-->
+  <!--<b>Panel 7P Direction:</b> <span id="panel-7p-direction"></span>-->
+  <!--<b>Panel 17D Direction:</b> <span id="panel-17d-direction"></span>-->
+  <!--<b>Panel 17P Direction:</b> <span id="panel-17p-direction"></span>-->
 </div>
-<!--<b>Panel 7D Direction:</b> <span id="panel-7d-direction"></span>-->
-<!--<b>Panel 7P Direction:</b> <span id="panel-7p-direction"></span>-->
-<!--<b>Panel 17D Direction:</b> <span id="panel-17d-direction"></span>-->
-<!--<b>Panel 17P Direction:</b> <span id="panel-17p-direction"></span>-->
+
+<div id="labels-tab" class="tab">
+
+</div>
 
 <script type="application/javascript">
-  var panelInfos = {};
-  for (var i in BAAAHS.Geometry.PANEL_MAP) {
-    var panelInfoA = BAAAHS.Geometry.PANEL_MAP[i];
-    var panelInfo = new PanelInfo(panelInfoA[0], panelInfoA[1], panelInfoA[2]);
-    panelInfos[panelInfo.name] = panelInfo;
-  }
+  var tabs = [];
+  (function() {
+    var dumb = document.getElementsByClassName('tab');
+    for (var i = 0; i < dumb.length; i++) {
+      tabs.push(dumb[i]);
+    }
+  })();
 
-  var container;
+  var mapViewer = null;
+  var labelViewer = null;
 
-  var camera, controls, scene, renderer;
-  var mouseX = 0, mouseY = 0;
+  function showTab(name) {
+    if (name == '') name = 'map';
 
-  var lookAt = new THREE.Vector3(0, 0, 0);
-  console.log('lookat', lookAt);
+    if (name == 'map') {
+      if (mapViewer == null) {
+        mapViewer = new MapViewer(document.getElementById('map-render-container'));
 
-  var windowX = window.innerWidth;
-  var windowY = window.innerHeight - 200;
-  var windowHalfX = windowX / 2;
-  var windowHalfY = windowY / 2;
-
-  var panels = new Panels();
-  document.panels = panels;
-  var raycaster = new THREE.Raycaster();
-
-  init();
-
-  document.getElementById('show-panels-front').addEventListener('change', function(e) { panels.changePanelVisibility('F', e.target.checked) });
-  document.getElementById('show-panels-rear').addEventListener('change', function(e) { panels.changePanelVisibility('R', e.target.checked) });
-  document.getElementById('show-panels-side').addEventListener('change', function(e) { panels.changePanelVisibility('S', e.target.checked) });
-  document.getElementById('show-panels-party').addEventListener('change', function(e) { panels.changePanelVisibility('D', e.target.checked) });
-  document.getElementById('show-panels-business').addEventListener('change', function(e) { panels.changePanelVisibility('P', e.target.checked) });
-  document.getElementById('flip-panels').addEventListener('change', function(e) { panels.flipPanels(e.target.checked) });
-
-  function toScreenPosition(vector) {
-//    var vector = new THREE.Vector3();
-
-//    obj.updateMatrixWorld();
-//    vector.setFromMatrixPosition(obj.matrixWorld);
-    vector.project(camera);
-
-    var widthHalf = 0.5 * renderer.context.canvas.width;
-    var heightHalf = 0.5 * renderer.context.canvas.height;
-    vector.x = ( vector.x * widthHalf ) + widthHalf;
-    vector.y = -( vector.y * heightHalf ) + heightHalf;
-
-    return {x: vector.x, y: vector.y};
-  }
-
-
-  /*** Initialize ***/
-  function init() {
-    // This <div> will host the canvas for our scene.
-    container = document.createElement('div');
-    container.id = 'render-container';
-
-    document.body.appendChild(container);
-
-    // You can adjust the cameras distance and set the FOV to something
-    // different than 45°. The last two values set the clippling plane.
-    camera = new THREE.PerspectiveCamera(45, windowX / windowY, 1, 2000);
-    camera.position.z = 400;
-//    camera.position.x = 200;
-//    camera.position.y = -100;
-
-    // This is the scene we will add all objects to.
-    scene = new THREE.Scene();
-
-    // You can set the color of the ambient light to any value.
-    // I have chose a completely white light because I want to paint
-    // all the shading into my texture. You propably want something darker.
-    var ambient = new THREE.AmbientLight(0xcccccc);
-    scene.add(ambient);
-
-    var light = new THREE.HemisphereLight(0x666666, 0x080820, 1);
-    scene.add(light);
-
-
-    // Uncomment these lines to create a simple directional light.
-    // var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-    // directionalLight.position.set( 0, 0, 1 ).normalize();
-    // scene.add( directionalLight );
-
-    /*** Texture Loading ***/
-    var manager = new THREE.LoadingManager();
-    manager.onProgress = function (item, loaded, total) {
-      console.log(item, loaded, total);
-    };
-    var texture = new THREE.Texture();
-    var loader = new THREE.ImageLoader(manager);
-
-    /*** OBJ Loading ***/
-    var loader = new THREE.OBJLoader(manager);
-
-    function createLabel(text, x, y, z, size, color, backGroundColor, backgroundMargin) {
-      if (!backgroundMargin)
-        backgroundMargin = 50;
-
-      var canvas = document.createElement("canvas");
-      document.body.appendChild(canvas);
-
-      var context = canvas.getContext("2d");
-//      context.font = size + "pt Arial";
-      context.font = "36pt Arial";
-
-      var textWidth = context.measureText(text).width;
-
-      canvas.width = textWidth + backgroundMargin;
-      canvas.height = size + backgroundMargin;
-      canvas.width = 128;
-      canvas.height = 128;
-      context = canvas.getContext("2d");
-      context.font = size + "pt Arial";
-
-      if (backGroundColor) {
-        context.fillStyle = backGroundColor;
-//        context.fillRect(canvas.width / 2 - textWidth / 2 - backgroundMargin / 2, canvas.height / 2 - size / 2 - +backgroundMargin / 2, textWidth + backgroundMargin, size + backgroundMargin);
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('show-panels-front').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('F', e.target.checked) });
+        document.getElementById('show-panels-rear').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('R', e.target.checked) });
+        document.getElementById('show-panels-side').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('S', e.target.checked) });
+        document.getElementById('show-panels-party').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('D', e.target.checked) });
+        document.getElementById('show-panels-business').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('P', e.target.checked) });
+        document.getElementById('flip-panels').addEventListener('change', function(e) { mapViewer.panels.flipPanels(e.target.checked) });
       }
 
-//      context.fillStyle = 'orange';
-//      context.fillRect(6, 57, 6, 57);
-//      context.fillRect(8, 8, 64, 64);
-//      context.fillRect(0, 0, 1, 1);
-
-      context.strokeStyle = 'orange';
-
-      context.beginPath();
-      context.moveTo(0, 0);
-      context.lineTo(canvas.width, canvas.height);
-      context.moveTo(canvas.width, 0);
-      context.lineTo(0, canvas.height);
-
-      context.moveTo(0, 0);
-      context.lineTo(canvas.width - 1, 0);
-      context.lineTo(canvas.width - 1, canvas.height - 1);
-      context.lineTo(0, canvas.height - 1);
-      context.lineTo(0, 0);
-
-//      for (var x1 = 0; x1 < canvas.width; x1 += 4) {
-//        context.moveTo(x1, 0);
-//        context.lineTo(x1, canvas.height);
-////        context.lineTo(x1 + canvas.height, canvas.height)
-//      }
-//      for (var y1 = 0; y1 < canvas.height; y1 += 4) {
-//        context.moveTo(0, y1);
-//        context.lineTo(canvas.width, y1);
-////        context.lineTo(canvas.width, y1 + canvas.width)
-//      }
-      context.stroke();
-
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillStyle = 'black';
-      context.strokeText(text, canvas.width / 2, canvas.height / 2);
-      context.fillText(text, canvas.width / 2, canvas.height / 2);
-//      context.strokeText(text, 0, 0);
-//      context.fillText(text, 0, 0);
-//      context.strokeText(text, 10, 10);
-//      context.fillText(text, 10, 10);
-//      context.strokeText(text, 64, 10);
-//      context.fillText(text, 64, 10);
-
-      // context.strokeStyle = "black";
-      // context.strokeRect(0, 0, canvas.width, canvas.height);
-
-      var texture = new THREE.Texture(canvas);
-      texture.needsUpdate = true;
-//      texture.repeat = new THREE.Vector2(1, 1);
-//      texture.offset = new THREE.Vector2(0.1, 0.1);
-//      texture.wrapS = THREE.ClampToEdgeWrapping;
-//      texture.wrapT = THREE.ClampToEdgeWrapping;
-//      texture.minFilter = THREE.NearestMipMapNearestFilter;
-//      texture.mapping = THREE.CubeReflectionMapping;
-
-
-//      return mesh;
-
-
-      return texture;
+      mapViewer.startRendering();
+    } else {
+      if (mapViewer != null) {
+        mapViewer.stopRendering();
+      }
     }
 
-    // We set the renderer to the size of the window and
-    // append a canvas to our HTML page.
-    renderer = new THREE.WebGLRenderer();
-    renderer.setClearColor(0xffffff, 1);
-    renderer.setSize(windowX, windowY);
-    container.appendChild(renderer.domElement);
+//    if (name == 'label') {
+//      if (labelViewer == null) {
+//        labelViewer = new LabelViewer(document.getElementById('label-render-container'));
+//      }
+//    }
 
-    // These variables set the camera behaviour and sensitivity.
-    controls = new THREE.TrackballControls(camera, container);
-    controls.rotateSpeed = 5.0;
-    controls.zoomSpeed = 5;
-    controls.panSpeed = 2;
-    controls.noZoom = false;
-    controls.noPan = false;
-    controls.staticMoving = true;
-    controls.dynamicDampingFactor = 0.3;
-
-    // As soon as the OBJ has been loaded this function looks for a mesh
-    // inside the data and applies the texture to it.
-    var modelUrl = 'export-from-model.obj';
-    if (document.location.hostname.indexOf("github") != 0) modelUrl = '../' + modelUrl;
-    loader.load(modelUrl, function (event) {
-      var object = event;
-//      console.log(object);
-
-      var centroid = new THREE.Vector3();
-      var vertexCount = 0;
-
-      object.traverse(function (child) {
-//        console.log(child);
-        if (child instanceof THREE.Mesh) {
-          child.geometry = new THREE.Geometry().fromBufferGeometry(child.geometry);
-          child.geometry.computeFaceNormals();
-
-          panels.add(new Panel(child));
-        }
-      });
-
-      panels.all().forEach(function (panel) {
-        panel.updateStyle();
-      });
-
-      // My initial model was too small, so I scaled it upwards.
-//      object.scale = new THREE.Vector3(25, 25, 25);
-
-      // You can change the position of the object, so that it is not
-      // centered in the view and leaves some space for overlay text.
-
-//      centroid.divideScalar(vertexCount);
-
-      var bounds = new THREE.Box3().setFromObject(object);
-      var objCenter = bounds.center();
-      console.log('bounding box:', bounds, 'center:', objCenter);
-
-      object.position.x = 0 - objCenter.x;
-      object.position.y = 0;
-      object.position.z = 0 - objCenter.z;
-      lookAt.y = objCenter.y;
-
-      console.log("Sheep origin is", object.position);
-
-      camera.position.y = objCenter.y;
-//      camera.lookAt(lookAt);
-      controls.target = lookAt;
-
-      scene.add(object);
+   tabs.forEach(function(tabEl) {
+      if (tabEl.id == name + '-tab') {
+        tabEl.classList.remove('hidden');
+      } else {
+        tabEl.classList.add('hidden');
+      }
     });
-
-//    var texture = createLabel("Label", 0, 0, 0, 10, "0x003300", "orange");
-//    var material = new THREE.MeshBasicMaterial({
-//      map : texture,
-////      color: "white"
-//    });
-//    material.side = THREE.DoubleSide;
-
-//    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvas.width, canvas.height), material);
-//    // mesh.overdraw = true;
-//    mesh.doubleSided = true;
-//    mesh.position.x = x - canvas.width;
-//    mesh.position.y = y - canvas.height;
-//    mesh.position.z = z;
-//    scene.add(mesh);
-
-
-//    var geom = new THREE.Geometry();
-//    geom.vertices.push(new THREE.Vector3(100, 100, 0));
-//    geom.vertices.push(new THREE.Vector3(300, 100, 0));
-//    geom.vertices.push(new THREE.Vector3(300, 300, 0));
-//    geom.faces.push(new THREE.Face3(0, 1, 2));
-//    console.log('faceVertexUvs', geom.faceVertexUvs);
-//    geom.faceVertexUvs[0] = [
-//      [new THREE.Vector2(0, 0), new THREE.Vector2(1, 0), new THREE.Vector2(1, 1)]
-//    ];
-////    geom.computeFaceNormals();
-////    sphere.computeCentroids();
-////    geom.computeVertexNormals();
-////    geom.computeTangents();
-//    var geomMesh = new THREE.Mesh(geom, material);
-//    scene.add(geomMesh);
   }
 
-  /*** The Loop ***/
-  function animate() {
-    // On every frame we need to calculate the new camera position
-    // and have it look exactly at the center of our scene.
-    controls.update();
-    renderer.render(scene, camera);
+  window.onhashchange = function() {
+    showTab(document.location.hash.substr(1));
+  };
 
-    function fmtFloat(f, left, right) {
-      var str = f.toFixed(right);
-      while (str.length < left + right + 1) str = ' ' + str;
-
-      return str;
-    }
-    function vectorToString(vector) {
-      return "x: " + fmtFloat(vector.x, 3, 2) + "; y: " + fmtFloat(vector.y, 3, 2) + "; z: " + fmtFloat(vector.z, 3, 2);
-    }
-
-    document.getElementById('camera-position').innerText = vectorToString(camera.position);
-    document.getElementById('camera-direction').innerText = vectorToString(camera.getWorldDirection());
-
-    var frustum = new THREE.Frustum();
-    var cameraViewProjectionMatrix = new THREE.Matrix4();
-
-// every time the camera or objects change position (or every frame)
-
-    camera.updateMatrixWorld(); // make sure the camera matrix is updated
-    camera.matrixWorldInverse.getInverse(camera.matrixWorld);
-    cameraViewProjectionMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    frustum.setFromMatrix(cameraViewProjectionMatrix);
-
-// frustum is now ready to check all the objects you need
-
-    panels.all().forEach(function (panel) {
-//        if (frustum.intersectsObject(panel.mesh)) {
-      panel.positionLabel();
-//        } else {
-//          panel.hideLabel();
-//        }
-    });
-
-    // This function calls itself on every frame. You can for example change
-    // the objects rotation on every call to create a turntable animation.
-    requestAnimationFrame(animate);
-  }
-  animate();
+  showTab(document.location.hash.substr(1));
 </script>
 </body>
 </html>

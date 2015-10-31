@@ -53,7 +53,9 @@ function Label(edge, angle) {
     nameDiv.innerHTML = '<div class="name ' + nameClass + '">' + re[1] + '<span class="side">' + re[2] + '</span></div>';
     if (this.panel.info) {
         var sectionClass = 'section';
-        if (this.panel.info.section.length > 6) {
+        if (this.panel.info.section.length > 10) {
+            sectionClass = 'section section10';
+        } else if (this.panel.info.section.length > 6) {
             sectionClass = 'section section8';
         }
       nameDiv.innerHTML += '<div class="' + sectionClass + '">(' + this.panel.info.section + ')</div>';

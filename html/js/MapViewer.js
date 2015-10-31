@@ -82,44 +82,46 @@ function MapViewer(panels, container) {
 }
 
 MapViewer.prototype.animate = function () {
-    // On every frame we need to calculate the new camera position
-    // and have it look exactly at the center of our scene.
-    this.controls.update();
-    this.renderer.render(this.scene, this.camera);
+    if (document.visibilityStatus == 'visible') {
+        // On every frame we need to calculate the new camera position
+        // and have it look exactly at the center of our scene.
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
 
-    function fmtFloat(f, left, right) {
-        var str = f.toFixed(right);
-        while (str.length < left + right + 1) str = ' ' + str;
+        function fmtFloat(f, left, right) {
+            var str = f.toFixed(right);
+            while (str.length < left + right + 1) str = ' ' + str;
 
-        return str;
-    }
+            return str;
+        }
 
-    function vectorToString(vector) {
-        return "x: " + fmtFloat(vector.x, 3, 2) + "; y: " + fmtFloat(vector.y, 3, 2) + "; z: " + fmtFloat(vector.z, 3, 2);
-    }
+        function vectorToString(vector) {
+            return "x: " + fmtFloat(vector.x, 3, 2) + "; y: " + fmtFloat(vector.y, 3, 2) + "; z: " + fmtFloat(vector.z, 3, 2);
+        }
 
-    document.getElementById('camera-position').innerText = vectorToString(this.camera.position);
-    document.getElementById('camera-direction').innerText = vectorToString(this.camera.getWorldDirection());
+        document.getElementById('camera-position').innerText = vectorToString(this.camera.position);
+        document.getElementById('camera-direction').innerText = vectorToString(this.camera.getWorldDirection());
 
-    var frustum = new THREE.Frustum();
-    var cameraViewProjectionMatrix = new THREE.Matrix4();
+        var frustum = new THREE.Frustum();
+        var cameraViewProjectionMatrix = new THREE.Matrix4();
 
 // every time the camera or objects change position (or every frame)
 
-    this.camera.updateMatrixWorld(); // make sure the camera matrix is updated
-    this.camera.matrixWorldInverse.getInverse(this.camera.matrixWorld);
-    cameraViewProjectionMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
-    frustum.setFromMatrix(cameraViewProjectionMatrix);
+        this.camera.updateMatrixWorld(); // make sure the camera matrix is updated
+        this.camera.matrixWorldInverse.getInverse(this.camera.matrixWorld);
+        cameraViewProjectionMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+        frustum.setFromMatrix(cameraViewProjectionMatrix);
 
 // frustum is now ready to check all the objects you need
 
-    this.panels.all().forEach(function (panel) {
+        this.panels.all().forEach(function (panel) {
 //        if (frustum.intersectsObject(panel.mesh)) {
-        panel.positionLabel(this);
+            panel.positionLabel(this);
 //        } else {
 //          panel.hideLabel();
 //        }
-    }.bind(this));
+        }.bind(this));
+    }
 
     // This function calls itself on every frame. You can for example change
     // the objects rotation on every call to create a turntable animation.

@@ -57,15 +57,32 @@ Panels.prototype.inventory = function (panel) {
 
     var lineGroup = new THREE.Group();
     var lineColor = panel.color.clone().multiplyScalar(0.1);
-    var material = new THREE.LineBasicMaterial({color: lineColor, linewidth: 4});
-    outlineSegments.forEach(function (segmentKey) {
+    var material = new THREE.LineBasicMaterial({color: lineColor, linewidth: 3});
+    material.overdraw = 1;
+
+    function addLine(segmentKey, offset) {
         var outlineGeometry = new THREE.Geometry();
         var segmentIds = segmentKey.split(",");
-        var v1 = self.getVertexByLocalId(segmentIds[0]);
-        var v2 = self.getVertexByLocalId(segmentIds[1]);
+        var v1 = self.getVertexByLocalId(segmentIds[0]).clone();
+        var v2 = self.getVertexByLocalId(segmentIds[1]).clone();
+        if (panel.isSide()) {
+            v1.z = v1.z * offset;
+            v2.z = v2.z * offset;
+        } else {
+            v1.x = v1.x * offset;
+            v2.x = v2.x * offset;
+        }
+        //v1.y = v1.y * 1.001;
+        //v2.y = v2.y * 1.001;
         outlineGeometry.vertices.push(v1);
         outlineGeometry.vertices.push(v2);
+        //outlineGeometry.vertices.reverse();
         lineGroup.add(new THREE.Line(outlineGeometry, material));
+    }
+
+    outlineSegments.forEach(function (segmentKey) {
+        addLine(segmentKey, 1.001);
+        addLine(segmentKey, 0.999);
     });
     panel.outline = lineGroup;
 
@@ -92,4 +109,19 @@ Panels.prototype.localVertexIdFor = function (vertex) {
 
 Panels.prototype.getVertexByLocalId = function (id) {
     return this.vertices[id];
+};
+
+
+Panels.prototype.changePanelVisibility = function (type, visible) {
+    this.all().forEach(function(panel) {
+        if (panel.isType(type)) {
+            panel.setVisibility(visible);
+        }
+    });
+};
+
+Panels.prototype.flipPanels = function (inverted) {
+    this.all().forEach(function(panel) {
+        panel.flip(inverted);
+    });
 };

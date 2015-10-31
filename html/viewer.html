@@ -48,7 +48,7 @@
     }
 
     /*noinspection CssUnusedSymbol*/
-    .panel-label.hidden {
+    .panel-label.hidden, .panel-label.invisible {
       display: none;
     }
 
@@ -75,6 +75,24 @@
   <b>Camera Direction:</b> <span id="camera-direction"></span>
   <span id="panel-misc-info-1"></span>
   <span id="panel-misc-info-2"></span>
+</div>
+
+<div id="controls">
+  <form>
+    <p>
+      Panels: <button id="show-panels">Show All</button>
+      <input type="checkbox" id="show-panels-front" checked/> <label for="show-panels-front">Front</label>
+      <input type="checkbox" id="show-panels-rear" checked/> <label for="show-panels-rear">Rear</label>
+      <input type="checkbox" id="show-panels-side" checked/> <label for="show-panels-side">Side</label>
+      <input type="checkbox" id="show-panels-party" checked/> <label for="show-panels-party">Party</label>
+      <input type="checkbox" id="show-panels-business" checked/> <label for="show-panels-business">Business</label>
+      |
+      <input type="checkbox" id="flip-panels"/> <label for="flip-panels">Flip</label>
+    </p>
+
+    <p>
+    </p>
+  </form>
 </div>
 <!--<b>Panel 7D Direction:</b> <span id="panel-7d-direction"></span>-->
 <!--<b>Panel 7P Direction:</b> <span id="panel-7p-direction"></span>-->
@@ -107,6 +125,13 @@
   var raycaster = new THREE.Raycaster();
 
   init();
+
+  document.getElementById('show-panels-front').addEventListener('change', function(e) { panels.changePanelVisibility('F', e.target.checked) });
+  document.getElementById('show-panels-rear').addEventListener('change', function(e) { panels.changePanelVisibility('R', e.target.checked) });
+  document.getElementById('show-panels-side').addEventListener('change', function(e) { panels.changePanelVisibility('S', e.target.checked) });
+  document.getElementById('show-panels-party').addEventListener('change', function(e) { panels.changePanelVisibility('D', e.target.checked) });
+  document.getElementById('show-panels-business').addEventListener('change', function(e) { panels.changePanelVisibility('P', e.target.checked) });
+  document.getElementById('flip-panels').addEventListener('change', function(e) { panels.flipPanels(e.target.checked) });
 
   function toScreenPosition(vector) {
 //    var vector = new THREE.Vector3();

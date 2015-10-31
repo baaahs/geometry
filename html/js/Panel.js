@@ -16,6 +16,17 @@ function Panel(mesh) {
 
     this.geometry = mesh.geometry;
 
+    // invert sides
+    //this.geometry.vertices = this.geometry.vertices.map(function(v) {
+    //    v = v.clone();
+    //    v.z = v.z < 0 ? -200 - v.z : 200 - v.z;
+    //    return v;
+    //});
+
+    // transparent panels
+    //this.mesh.material.transparent = true;
+    //this.mesh.material.opacity = 0.9;
+
     this.label = label;
 
     if (this.info) {
@@ -27,8 +38,43 @@ function Panel(mesh) {
     }
 }
 
+Panel.prototype.isSide = function () {
+    return this.name.indexOf('F') == -1 && this.name.indexOf('R') == -1;
+};
+
+// some combination of F(ront), R(ear), S(ide), D(river), and (P)assenger
+Panel.prototype.isType = function (type) {
+    var myType = (this.isSide() ? 'S' : '') + this.name.replace(/[0-9AB]/, '');
+    return myType.indexOf(type) != -1;
+};
+
+Panel.prototype.setVisibility = function (visible) {
+    this.mesh.visible = visible;
+    this.outline.visible = visible;
+    if (visible) {
+        this.label.classList.remove('invisible');
+    } else {
+        this.label.classList.add('invisible');
+    }
+};
+
+Panel.prototype.flip = function(inverted) {
+    this.geometry.faces.forEach(function(face) {
+        var verts = [face.a, face.b, face.c];
+        face.a = verts[2];
+        face.c = verts[0];
+        console.log(face);
+    });
+    if (this.mesh.material.side == THREE.FrontSide) {
+        this.mesh.material.side = THREE.BackSide;
+    } else if (this.mesh.material.side == THREE.BackSide) {
+        this.mesh.material.side = THREE.FrontSide;
+    }
+    //this.mesh.needsUpdate = true;
+};
+
 Panel.prototype.updateStyle = function () {
-    this.mesh.material.side = THREE.DoubleSide;
+    this.mesh.material.side = THREE.FrontSide;
 
     this.mesh.material.color = this.color;
 
@@ -47,15 +93,15 @@ Panel.prototype.getCentroid = function () {
 };
 
 Panel.prototype.hideLabel = function () {
-    if (!this.label.classList.contains('hidden')) {
+    //if (!this.label.classList.contains('hidden')) {
         this.label.classList.add('hidden');
-    }
+    //}
 };
 
 Panel.prototype.showLabel = function () {
-    if (this.label.classList.contains('hidden')) {
+    //if (this.label.classList.contains('hidden')) {
         this.label.classList.remove('hidden');
-    }
+    //}
 };
 
 Panel.prototype.positionLabel = function () {

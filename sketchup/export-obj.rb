@@ -61,7 +61,7 @@ module BAAAHS
       end
 
       def is_other_external_part?(e)
-        e.respond_to?(:name) && e.name =~ /^(Face|Tail|Ear [DP])$/ #&& e.typename == 'Group'
+        e.respond_to?(:name) && e.name =~ /^(Face|Tail|(Ear|Eye) [DP])$/ #&& e.typename == 'Group'
       end
 
 # traverse model do |e|
@@ -106,30 +106,36 @@ module BAAAHS
         traverse(panel_entity, parents) do |e2, face_parents|
           if e2.typename == 'Face'
             face = e2
+
             xforms = face_parents.map { |p| p.transformation }
             # xforms.shift
             @log.puts "  parents: #{face_parents.map { |p| "#{p.name} (#{p.typename} — offset=#{pt3fmt(p.transformation.origin)})" }.join(" ")}"
             # @log.puts "  xforms: #{xforms.inspect}"
-            vertex_ids = face.vertices.map do |v|
-              pt3 = v.position
-              xforms.reverse.each_with_index do |t, i|
-                pt_before = pt3
-                pt3 = pt3.transform(t) unless t.identity?
-                # @log.puts pt3.inspect
-                # @log.puts t.origin.inspect
-                # vector = Geom::Vector3d.new([t.origin.x, t.origin.y, t.origin.z])
-                # @log.puts (pt3 + vector).inspect
-                # pt3 = pt3 + vector unless t.identity?
-                @log.puts "#{i == 0 ? '*' : ' '}    #{pt3fmt pt_before} + #{pt3fmt t.origin} ->  #{pt3fmt pt3}"
+
+            points = face.mesh.points
+            face.mesh.polygons.each do |point_indexes|
+              vertices = point_indexes.map { |i| points[i.abs - 1] }
+              @log.puts vertices.inspect
+              vertex_ids = vertices.map do |pt3|
+                xforms.reverse.each_with_index do |t, i|
+                  pt_before = pt3
+                  pt3 = pt3.transform(t) unless t.identity?
+                  # @log.puts pt3.inspect
+                  # @log.puts t.origin.inspect
+                  # vector = Geom::Vector3d.new([t.origin.x, t.origin.y, t.origin.z])
+                  # @log.puts (pt3 + vector).inspect
+                  # pt3 = pt3 + vector unless t.identity?
+                  @log.puts "#{i == 0 ? '*' : ' '}    #{pt3fmt pt_before} + #{pt3fmt t.origin} ->  #{pt3fmt pt3}"
+                end
+                # @log.puts "  Vertex #{v} of #{part_name}: #{pt3fmt pt3}"
+                # pt3 = pt3.to_a
+
+                vertex_id_for(pt3)
               end
-              # @log.puts "  Vertex #{v} of #{part_name}: #{pt3fmt pt3}"
-              # pt3 = pt3.to_a
 
-              vertex_id_for(pt3)
+              faces << Face.new(vertex_ids)
+              @log.puts "#{vertex_ids.inspect}: [#{vertex_ids.map { |v_index| v = @vertices[v_index]; pt3fmt(v) }.join(', ')}]"
             end
-
-            faces << Face.new(vertex_ids)
-            @log.puts "#{vertex_ids.inspect}: [#{vertex_ids.map { |v_index| v = @vertices[v_index]; pt3fmt(v) }.join(', ')}]"
           end
         end
 
@@ -174,6 +180,7 @@ module BAAAHS
               end
 
               # @log.puts "hi!"
+              puts "Exported #{@panels.size} panels."
             end
           rescue => e
             log << e.message

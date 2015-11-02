@@ -82,7 +82,7 @@ function MapViewer(panels, container) {
 }
 
 MapViewer.prototype.animate = function () {
-    if (document.visibilityStatus == 'visible') {
+    if (document.visibilityState == 'visible') {
         // On every frame we need to calculate the new camera position
         // and have it look exactly at the center of our scene.
         this.controls.update();

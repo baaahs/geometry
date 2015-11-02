@@ -47,6 +47,8 @@ function Panel(mesh, info) {
     });
     v.divideScalar(this.mesh.geometry.faces.length);
     this.normal = v;
+
+    this.flipped = false;
 }
 
 Panel.prototype.isPanel = function () {
@@ -86,6 +88,8 @@ Panel.prototype.flip = function(inverted) {
         this.mesh.material.side = THREE.FrontSide;
     }
     //this.mesh.needsUpdate = true;
+
+    this.flipped = !this.flipped;
 };
 
 Panel.prototype.updateStyle = function () {
@@ -166,10 +170,11 @@ Panel.prototype.positionLabel = function (mapViewer) {
     var worldNormal = panelNormal.clone().applyMatrix3(normalMatrix).normalize();
     var cameraDirection = mapViewer.camera.getWorldDirection();
     var dot = worldNormal.clone().dot(cameraDirection);
-    if (dot > -0.5) {
-        this.hideLabel();
-    } else {
+    var visible = dot > -0.5;
+    if (this.flipped ? visible : !visible) {
         this.showLabel();
+    } else {
+        this.hideLabel();
     }
 
 //    if (this.name == '7D') {

@@ -6,28 +6,30 @@ function Panel(mesh, info) {
         console.log('No info for ' + this.name + '.');
     }
 
-    var label = document.createElement('div');
-    label.className = 'panel-label';
-    label.innerHTML = '<div class="name">' + this.name + "</div>";
-    if (this.info) {
-        label.innerHTML += '<div class="section">' + this.info.section + '</div>';
-    }
-
     this.geometry = mesh.geometry;
 
-    // invert sides
-    //this.geometry.vertices = this.geometry.vertices.map(function(v) {
-    //    v = v.clone();
-    //    v.z = v.z < 0 ? -200 - v.z : 200 - v.z;
-    //    return v;
-    //});
+    if (this.isPanel()) {
+        var label = document.createElement('div');
+        label.className = 'panel-label';
+        label.innerHTML = '<div class="name">' + this.name + "</div>";
+        if (this.info) {
+            label.innerHTML += '<div class="section">' + this.info.section + '</div>';
+        }
 
-    // transparent panels
-    //this.mesh.material.transparent = true;
-    //this.mesh.material.opacity = 0.9;
+        // invert sides
+        //this.geometry.vertices = this.geometry.vertices.map(function(v) {
+        //    v = v.clone();
+        //    v.z = v.z < 0 ? -200 - v.z : 200 - v.z;
+        //    return v;
+        //});
 
-    this.label = label;
+        // transparent panels
+        //this.mesh.material.transparent = true;
+        //this.mesh.material.opacity = 0.9;
 
+        this.label = label;
+
+    }
     if (this.info) {
         this.color = new THREE.Color(BAAAHS.Geometry.SECTION_COLORS[this.info.section]);
     } else if (BAAAHS.Geometry.SECTION_COLORS[this.name]) {
@@ -35,6 +37,8 @@ function Panel(mesh, info) {
     } else {
         this.color = new THREE.Color("#ffffff");
     }
+
+    this.mesh.material.color = this.color;
 
     this.mesh.geometry.computeFaceNormals();
     var v = new THREE.Vector3(0);
@@ -46,7 +50,7 @@ function Panel(mesh, info) {
 }
 
 Panel.prototype.isPanel = function () {
-    return this.name != 'Face' && this.name != 'Tail' && this.name.indexOf('Ear') == -1;
+    return this.name != 'Face' && this.name != 'Tail' && this.name.indexOf('Ear') == -1 && this.name.indexOf('Eye') == -1;
 };
 
 Panel.prototype.isSide = function () {

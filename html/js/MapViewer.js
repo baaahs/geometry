@@ -5,10 +5,16 @@ function MapViewer(panels, container) {
     console.log('lookat', this.lookAt);
 
     var windowX = window.innerWidth;
-    var windowY = window.innerHeight - 200;
+    var windowY = window.innerHeight;
 
     // This <div> will host the canvas for our scene.
     this.container = container;
+
+    this.caption = document.createElement('div');
+    this.caption.id = 'map-caption';
+    this.caption.style.left = '0';
+    this.caption.style.top = '0';
+    this.container.appendChild(this.caption);
 
     // You can adjust the cameras distance and set the FOV to something
     // different than 45°. The last two values set the clippling plane.
@@ -79,7 +85,28 @@ function MapViewer(panels, container) {
     this.controls.target = this.lookAt;
 
     this.scene.add(model);
+
+    window.addEventListener('keyup', function(e) {
+        if (e.keyCode == 27) {
+            this.toggleToolsVisibility();
+            e.stopPropagation();
+        }
+        console.log(e);
+    }.bind(this), false);
+
+    this.toolsVisible = true;
 }
+
+MapViewer.prototype.setCaption = function(s) {
+    this.caption.innerText = s;
+    this.caption.innerHTML = this.caption.innerHTML.replace(/<br>(.*)/, "<br><small>$1</small>");
+};
+
+MapViewer.prototype.toggleToolsVisibility = function() {
+    this.toolsVisible = !this.toolsVisible;
+
+    document.body.classList.toggle('tools-hidden', !this.toolsVisible);
+};
 
 MapViewer.prototype.animate = function () {
     if (document.visibilityState == 'visible') {

@@ -20,11 +20,6 @@
 
   <style type="text/css">
     /*noinspection CssUnusedSymbol*/
-    #map-render-container {
-      margin: 5px;
-      position: relative;
-    }
-
     #tabs {
       position: absolute;
       left: 10px;
@@ -34,6 +29,23 @@
 
     .tab.hidden {
       display: none;
+    }
+
+    #map-render-container {
+      margin: 5px;
+      position: relative;
+      font-family: Futura;
+    }
+
+    #map-caption {
+      font-size: 72pt;
+      position: absolute;
+      text-align: center;
+      line-height: .6em;
+    }
+
+    #map-caption small {
+      font-size: 36pt;
     }
 
     #info {
@@ -207,30 +219,56 @@
       width: 20%;
       z-index: -1;
     }
+
+    #hrule, #hrule2 {
+      position: absolute;
+      width: 100vw;
+      height: 1px;
+      border: 1px solid black;
+      visibility: hidden;
+    }
+
+    #vrule, #vrule2 {
+      position: absolute;
+      width: 1px;
+      height: 100vh;
+      border: 1px solid black;
+      visibility: hidden;
+    }
+
+    .tools-hidden .tool {
+      display: none;
+    }
   </style>
 </head>
 <body>
 
-<div id="tabs">
+<div id="tabs" class="tool">
   <a href="#map">Map</a>
   |
   <a href="#labels">Labels</a>
 </div>
 
 <div id="map-tab" class="tab">
-  <div id="map-render-container"></div>
+  <div id="map-render-container">
+    <div id="hrule"></div>
+    <div id="vrule"></div>
+    <div id="hrule2"></div>
+    <div id="vrule2"></div>
+  </div>
 
-  <div id="info">
+  <div id="info" class="tool">
     <b>Camera Position: </b> <span id="camera-position"></span>
     <b>Camera Direction:</b> <span id="camera-direction"></span>
     <span id="panel-misc-info-1"></span>
     <span id="panel-misc-info-2"></span>
   </div>
 
-  <div id="map-controls">
+  <div id="map-controls" class="tool">
     <form>
       <p>
-        Panels: <button id="show-panels">Show All</button>
+        Panels:
+        <button id="show-panels">Show All</button>
         <input type="checkbox" id="show-panels-front" checked/> <label for="show-panels-front">Front</label>
         <input type="checkbox" id="show-panels-rear" checked/> <label for="show-panels-rear">Rear</label>
         <input type="checkbox" id="show-panels-side" checked/> <label for="show-panels-side">Side</label>
@@ -238,6 +276,8 @@
         <input type="checkbox" id="show-panels-business" checked/> <label for="show-panels-business">Business</label>
         |
         <input type="checkbox" id="flip-panels"/> <label for="flip-panels">Flip</label>
+        |
+        <label for="caption-input">Caption:</label> <textarea id="caption-input" width="20" height="2"></textarea>
       </p>
 
       <p>
@@ -256,7 +296,7 @@
 
 <script type="application/javascript">
   var tabs = [];
-  (function() {
+  (function () {
     var dumb = document.getElementsByClassName('tab');
     for (var i = 0; i < dumb.length; i++) {
       tabs.push(dumb[i]);
@@ -276,12 +316,45 @@
       if (mapViewer == null) {
         mapViewer = new MapViewer(panels, document.getElementById('map-render-container'));
 
-        document.getElementById('show-panels-front').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('F', e.target.checked) });
-        document.getElementById('show-panels-rear').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('R', e.target.checked) });
-        document.getElementById('show-panels-side').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('S', e.target.checked) });
-        document.getElementById('show-panels-party').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('D', e.target.checked) });
-        document.getElementById('show-panels-business').addEventListener('change', function(e) { mapViewer.panels.changePanelVisibility('P', e.target.checked) });
-        document.getElementById('flip-panels').addEventListener('change', function(e) { mapViewer.panels.flipPanels(e.target.checked) });
+        var mouseDownOnCaption = false;
+        document.getElementById('show-panels-front').addEventListener('change', function (e) {
+          mapViewer.panels.changePanelVisibility('F', e.target.checked)
+        });
+        document.getElementById('show-panels-rear').addEventListener('change', function (e) {
+          mapViewer.panels.changePanelVisibility('R', e.target.checked)
+        });
+        document.getElementById('show-panels-side').addEventListener('change', function (e) {
+          mapViewer.panels.changePanelVisibility('S', e.target.checked)
+        });
+        document.getElementById('show-panels-party').addEventListener('change', function (e) {
+          mapViewer.panels.changePanelVisibility('D', e.target.checked)
+        });
+        document.getElementById('show-panels-business').addEventListener('change', function (e) {
+          mapViewer.panels.changePanelVisibility('P', e.target.checked)
+        });
+        document.getElementById('flip-panels').addEventListener('change', function (e) {
+          mapViewer.panels.flipPanels(e.target.checked)
+        });
+        document.getElementById('caption-input').addEventListener('keyup', function (e) {
+          mapViewer.setCaption(e.target.value);
+        });
+        var mapCaption = document.getElementById('map-caption');
+        mapCaption.addEventListener('mousedown', function (e) {
+          mouseDownOnCaption = true;
+          e.stopPropagation();
+        }, true);
+        mapCaption.addEventListener('mouseup', function (e) {
+          mouseDownOnCaption = false;
+          e.stopPropagation();
+        }, true);
+        document.addEventListener('mousemove', function (e) {
+          if (mouseDownOnCaption) {
+            mapCaption.style.left = (parseInt(mapCaption.style.left) + parseInt(e.movementX)) + 'px';
+            mapCaption.style.top = (parseInt(mapCaption.style.top) + parseInt(e.movementY)) + 'px';
+            console.log(mapCaption.style.left, mapCaption.style.top);
+          }
+          e.stopPropagation();
+        }, false);
       }
 
       mapViewer.startRendering();
@@ -297,7 +370,7 @@
       }
     }
 
-   tabs.forEach(function(tabEl) {
+    tabs.forEach(function (tabEl) {
       if (tabEl.id == name + '-tab') {
         tabEl.classList.remove('hidden');
       } else {

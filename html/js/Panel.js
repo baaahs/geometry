@@ -61,7 +61,7 @@ Panel.prototype.isSide = function () {
 
 // some combination of F(ront), R(ear), S(ide), D(river), and (P)assenger
 Panel.prototype.isType = function (type) {
-    var myType = (this.isSide() ? 'S' : '') + this.name.replace(/[0-9AB]/, '');
+    var myType = (this.isSide() ? 'S' : '') + this.name.replace(/[0-9AB]+/, '');
     return myType.indexOf(type) != -1;
 };
 
@@ -136,30 +136,49 @@ Panel.prototype.positionLabel = function (mapViewer) {
 //    }
 
     var center = this.mesh.localToWorld(this.getCentroid());
-    this.geometry.computeBoundingBox();
-    var box = this.geometry.boundingBox;
-    var boxMin = mapViewer.toScreenPosition(box.min);
-    var boxMax = mapViewer.toScreenPosition(box.max);
-    boxMin = new THREE.Vector2(boxMin.x, boxMin.y);
-    boxMax = new THREE.Vector2(boxMax.x, boxMax.y);
-    var boxSize = Math.sqrt(boxMax.distanceToSquared(boxMin));
+    var centerPixels = mapViewer.toScreenPosition(center);
+
+    var box = new THREE.Box2();
+    this.geometry.vertices.forEach(function(v) {
+        var position = mapViewer.toScreenPosition(this.mesh.localToWorld(v.clone()));
+        box.expandByPoint(position);
+    }.bind(this));
+    var boxMin = box.min;
+    var boxMax = box.max;
+
+    //this.geometry.computeBoundingBox();
+    //var box = this.geometry.boundingBox;
+    //var boxMin = mapViewer.toScreenPosition(this.mesh.localToWorld(box.min));
+    //var boxMax = mapViewer.toScreenPosition(this.mesh.localToWorld(box.max));
+    var xDiff = Math.abs(boxMax.x - boxMin.x);
+    var yDiff = Math.abs(boxMax.y - boxMin.y);
+    //var boxSize = Math.min(xDiff, yDiff);
+    var boxSize = (xDiff + yDiff + Math.min(xDiff, yDiff)) / 3;
+    //boxSize = Math.max(boxSize, 40);
+    //boxMin = new THREE.Vector2(boxMin.x, boxMin.y);
+    //boxMax = new THREE.Vector2(boxMax.x, boxMax.y);
+    //var boxSize = Math.sqrt(boxMax.distanceToSquared(boxMin));
 
     if (this.name == '7D') {
         document.getElementById('panel-misc-info-1').innerText =
-            'topleft: ' + boxMin.x + ", " + boxMin.y + "\n" +
-            'botrght: ' + boxMax.x + ", " + boxMax.y + "\n" +
+            'topleft: ' + boxMin.x.toFixed(4) + ", " + boxMin.y.toFixed(4) + " " +
+            'botrght: ' + boxMax.x.toFixed(4) + ", " + boxMax.y.toFixed(4) + " " +
             'dist: ' + boxSize;
-    } else if (this.name == '7P') {
+    } else if (this.name == 'F3P') {
+        document.getElementById('hrule').style.top = parseInt(boxMin.y) + 'px';
+        document.getElementById('vrule').style.left = parseInt(boxMin.x) + 'px';
+        document.getElementById('hrule2').style.top = parseInt(boxMax.y) + 'px';
+        document.getElementById('vrule2').style.left = parseInt(boxMax.x) + 'px';
+
         document.getElementById('panel-misc-info-2').innerText =
-            'topleft: ' + boxMin.x + ", " + boxMin.y + "\n" +
-            'botrght: ' + boxMax.x + ", " + boxMax.y + "\n" +
+            'topleft: ' + boxMin.x.toFixed(4) + ", " + boxMin.y.toFixed(4) + " " +
+            'botrght: ' + boxMax.x.toFixed(4) + ", " + boxMax.y.toFixed(4) + " " +
             'dist: ' + boxSize;
     }
 
-    var fontSize = (boxSize / 400 * 18).toFixed();
-    fontSize = Math.min(fontSize, 36);
+    var fontSize = (boxSize / 12).toFixed();
+    //fontSize = Math.min(fontSize, 36);
 //    var size = box.max.clone().sub(box.min);
-    var centerPixels = mapViewer.toScreenPosition(center);
 
     this.label.style.left = centerPixels.x + 'px';
     this.label.style.top = centerPixels.y + 'px';

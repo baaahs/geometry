@@ -109,16 +109,30 @@
 
     .label {
       width: 4in;
-      height: 1.5in;
+      height: 1.25in;
       border: 1px solid black;
-      margin: 0.0625in;
+      margin: 0.1cm;
       position: relative;
       display: inline-flex;
       flex-direction: row;
       justify-content: center;
       align-items: center;
-      font-family:  "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+      font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
       overflow: hidden;
+    }
+
+    .label.hidden, .label.invisible {
+      display: none;
+    }
+
+    .label-border-left {
+      position: absolute;
+      left: 0;
+      transform: rotate(90deg);
+
+      font-family: Monaco, monospace;
+      font-size: 9pt;
+      white-space: pre;
     }
 
     .label .name {
@@ -220,6 +234,11 @@
       z-index: -1;
     }
 
+    #labels-controls {
+      text-align: right;
+      width: 100%;
+    }
+
     #hrule, #hrule2 {
       position: absolute;
       width: 100vw;
@@ -291,6 +310,11 @@
 </div>
 
 <div id="labels-tab" class="tab">
+  <div id="labels-controls">
+    <form>
+      <label for="labels-filter">Filter RE: </label><input type="text" id="labels-filter"/>
+    </form>
+  </div>
   <div id="label-render-container"></div>
 </div>
 
@@ -367,6 +391,10 @@
     if (name == 'labels') {
       if (labelViewer == null) {
         labelViewer = new LabelViewer(panels, document.getElementById('label-render-container'));
+
+        document.getElementById('labels-filter').addEventListener('keyup', function(e) {
+          labelViewer.filterLabels(new RegExp(e.target.value));
+        });
       }
     }
 

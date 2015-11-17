@@ -1,6 +1,7 @@
 function LabelViewer(panels, container) {
     this.panels = panels;
     this.container = container;
+    this.labels = [];
 
     this.draw();
 }
@@ -8,7 +9,11 @@ function LabelViewer(panels, container) {
 LabelViewer.prototype.draw = function () {
     this.panels.all().forEach(function (panel) {
         //if (panel.name == '7D') {
-            panel.edges(panels).forEach(this.drawOne.bind(this));
+        panel.edges(panels).forEach(function(edge) {
+            var label = this.drawOne(edge);
+            this.labels.push(label);
+            this.container.appendChild(label.dom);
+        }.bind(this));
         //}
     }.bind(this));
 };
@@ -26,8 +31,15 @@ LabelViewer.prototype.drawOne = function (edge) {
     var angle = Math.atan2(vector.y, vector.x) / (2 * Math.PI) * 360;
     console.log(edge.panel.name, vector, angle);
 
-    var label = new Label(edge, angle);
-    this.container.appendChild(label.dom);
+    return new Label(edge, angle);
+};
+
+LabelViewer.prototype.filterLabels = function(re) {
+    this.labels.forEach(function(label) {
+        var matchesPanel = re.test(label.panel.name);
+        console.log(label.panel.name, 'is', matchesPanel);
+        label.dom.classList.toggle('invisible', !matchesPanel);
+    });
 };
 
 function Label(edge, angle) {

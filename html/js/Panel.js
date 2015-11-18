@@ -237,3 +237,17 @@ function Edge(panel, v1, v2, allPanels) {
         }
     }
 }
+
+Edge.prototype.angle = function() {
+    var quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(this.panel.normal, new THREE.Vector3(0, 0, 1));
+
+    //console.log(edge.panel.name, 'v1', edge.v1, 'v2', edge.v2);
+    var v1 = this.v1.clone().applyQuaternion(quaternion);
+    var v2 = this.v2.clone().applyQuaternion(quaternion);
+    //console.log(edge.panel.name, 'v1', v1, 'v2', v2, '*** rotated');
+
+    var vector = v1.clone().sub(v2);
+    return Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+    //console.log('endpoints of edge between ', edge.panel.name, 'and', edge.otherPanel.name, ':', v1, v2, 'angle:', angle);
+};

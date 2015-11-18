@@ -89,14 +89,12 @@ Panels.prototype.inventory = function (panel) {
         segmentsByKey[segmentKey] = [localVertexIds[v1], localVertexIds[v2]];
         segmentsByKey[segmentKeyAlt] = [localVertexIds[v2], localVertexIds[v1]];
         if (seenSegments[segmentKey] || seenSegments[segmentKeyAlt]) {
-            console.log("already saw", segmentKey, "in", panel.name);
             var i = outlineSegments.indexOf(segmentKey);
             if (i != -1) outlineSegments.splice(i, 1);
 
             i = outlineSegments.indexOf(segmentKeyAlt);
             if (i != -1) outlineSegments.splice(i, 1);
         } else {
-            console.log("haven't yet seen", segmentKey, "in", panel.name);
             outlineSegments.push(segmentKey);
             seenSegments[segmentKey] = true;
             seenSegments[segmentKeyAlt] = true;
@@ -189,12 +187,12 @@ Panels.prototype.flipPanels = function (inverted) {
 Panels.prototype.emitFixtureCodeFor = function (panel) {
     var decimalPlaces = 0;
     var v = "[" + panel.geometry.vertices.map(function (vertex) {
-            return "new THREE.Vector3(" + vertex.x.toFixed(decimalPlaces) + "," + vertex.y.toFixed(decimalPlaces) + "," + vertex.z.toFixed(decimalPlaces) + ")"
+            return "[" + vertex.x.toFixed(decimalPlaces) + "," + vertex.y.toFixed(decimalPlaces) + "," + vertex.z.toFixed(decimalPlaces) + "]"
         }).join(",") + "]";
 
     var f = "[" + panel.geometry.faces.map(function (face) {
-            return "new THREE.Face3(" + face.a + "," + face.b + "," + face.c + ")"
+            return "[" + face.a + "," + face.b + "," + face.c + "]"
         }).join(",") + "]";
 
-    console.log("panelFixture['" + panel.name + "'] = function() { var g = new THREE.Geometry(); g.vertices = " + v + "; g.faces = " + f + "; return new Panel({ name: '" + panel.name + "', geometry: g, material: {} }, null); }();")
+    console.log("panelFixture['" + panel.name + "'] = buildFixturePanel('" + panel.name + "', " + v + ", " + f + ");")
 };

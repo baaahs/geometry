@@ -10,7 +10,7 @@ LabelViewer.prototype.draw = function () {
     this.panels.all().forEach(function (panel) {
         //if (panel.name == '7P') {
         panel.edges(panels).forEach(function(edge) {
-            var label = this.drawOne(edge);
+            var label = new Label(edge);
             this.labels.push(label);
             this.container.appendChild(label.dom);
         }.bind(this));
@@ -18,45 +18,29 @@ LabelViewer.prototype.draw = function () {
     }.bind(this));
 };
 
-LabelViewer.prototype.drawOne = function (edge) {
-    var quaternion = new THREE.Quaternion();
-    quaternion.setFromUnitVectors(edge.panel.normal, new THREE.Vector3(0, 0, 1));
-
-    //console.log(edge.panel.name, 'v1', edge.v1, 'v2', edge.v2);
-    var v1 = edge.v1.clone().applyQuaternion(quaternion);
-    var v2 = edge.v2.clone().applyQuaternion(quaternion);
-    //console.log(edge.panel.name, 'v1', v1, 'v2', v2, '*** rotated');
-
-    var vector = v1.clone().sub(v2);
-    var angle = Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
-    //console.log('endpoints of edge between ', edge.panel.name, 'and', edge.otherPanel.name, ':', v1, v2, 'angle:', angle);
-
-    return new Label(edge, angle);
-};
-
 LabelViewer.prototype.filterLabels = function(re) {
     this.labels.forEach(function(label) {
         var matchesPanel = re.test(label.panel.name);
-        console.log(label.panel.name, 'is', matchesPanel);
         label.dom.classList.toggle('invisible', !matchesPanel);
     });
 };
 
-function Label(edge, angle) {
+function Label(edge) {
     this.edge = edge;
     this.panel = edge.panel;
+    var angle = edge.angle();
 
     var upperEdge = false;
 
     // no upside-downsies
-    if (angle > 90) {
-        angle -= 180;
-        upperEdge = !upperEdge;
-    }
-    if (angle < -90) {
-        angle += 180;
-        upperEdge = !upperEdge;
-    }
+    //if (angle > 90) {
+    //    angle -= 180;
+    //    upperEdge = !upperEdge;
+    //}
+    //if (angle < -90) {
+    //    angle += 180;
+    //    upperEdge = !upperEdge;
+    //}
 
     this.dom = this.createDiv('label');
 
@@ -83,7 +67,12 @@ function Label(edge, angle) {
     nameDiv.style.transform = 'rotate(' + angle + 'deg)';
 
     // show label rotated:
-    this.dom.style.transform = 'rotate(' + (0 - angle) + 'deg)';
+    if (false) {
+        this.dom.style.transform = 'rotate(' + (0 - angle) + 'deg)';
+    } else if (angle > 90 || angle < -90) {
+        // make text be printed right-side-up…
+        this.dom.style.transform = 'rotate(180deg)';
+    }
 
     if (edge.otherPanel && edge.otherPanel.isPanel()) {
         var otherPanelName = edge.otherPanel ? edge.otherPanel.name : '';

@@ -68,6 +68,7 @@ Panels.prototype.add = function (panel) {
 
 //    if (panel.name == '37D')
     this.inventory(panel);
+    //this.emitFixtureCodeFor(panel);
 };
 
 Panels.prototype.inventory = function (panel) {
@@ -81,15 +82,24 @@ Panels.prototype.inventory = function (panel) {
     var segmentsByKey = {};
 
     function check(v1, v2) {
-        var segmentIds = [localVertexIds[v1], localVertexIds[v2]].sort();
-        var segmentKey = segmentIds[0] + "," + segmentIds[1];
-        segmentsByKey[segmentKey] = segmentIds;
-        if (seenSegments[segmentKey]) {
+        // key has vertices re-ordered, so edges have unknown directionality
+        var segmentKey = localVertexIds[v1] + "," + localVertexIds[v2];
+        var segmentKeyAlt = localVertexIds[v2] + "," + localVertexIds[v1];
+
+        segmentsByKey[segmentKey] = [localVertexIds[v1], localVertexIds[v2]];
+        segmentsByKey[segmentKeyAlt] = [localVertexIds[v2], localVertexIds[v1]];
+        if (seenSegments[segmentKey] || seenSegments[segmentKeyAlt]) {
+            console.log("already saw", segmentKey, "in", panel.name);
             var i = outlineSegments.indexOf(segmentKey);
             if (i != -1) outlineSegments.splice(i, 1);
+
+            i = outlineSegments.indexOf(segmentKeyAlt);
+            if (i != -1) outlineSegments.splice(i, 1);
         } else {
+            console.log("haven't yet seen", segmentKey, "in", panel.name);
             outlineSegments.push(segmentKey);
             seenSegments[segmentKey] = true;
+            seenSegments[segmentKeyAlt] = true;
         }
     }
 
@@ -133,10 +143,12 @@ Panels.prototype.inventory = function (panel) {
     panel.outline = lineGroup;
 
     outlineSegments.forEach(function (segmentKey) {
-        var panelsForEdge = self.panelsByEdge[segmentKey];
+        var segmentKeyNorm = segmentsByKey[segmentKey].sort().join(",");
+
+        var panelsForEdge = self.panelsByEdge[segmentKeyNorm];
         if (panelsForEdge == null) {
             panelsForEdge = [];
-            self.panelsByEdge[segmentKey] = panelsForEdge;
+            self.panelsByEdge[segmentKeyNorm] = panelsForEdge;
         }
         panelsForEdge.push(panel);
     });
@@ -161,7 +173,7 @@ Panels.prototype.getVertexByLocalId = function (id) {
 
 
 Panels.prototype.changePanelVisibility = function (type, visible) {
-    this.all().forEach(function(panel) {
+    this.all().forEach(function (panel) {
         if (panel.isType(type)) {
             panel.setVisibility(visible);
         }
@@ -169,7 +181,20 @@ Panels.prototype.changePanelVisibility = function (type, visible) {
 };
 
 Panels.prototype.flipPanels = function (inverted) {
-    this.all().forEach(function(panel) {
+    this.all().forEach(function (panel) {
         panel.flip(inverted);
     });
+};
+
+Panels.prototype.emitFixtureCodeFor = function (panel) {
+    var decimalPlaces = 0;
+    var v = "[" + panel.geometry.vertices.map(function (vertex) {
+            return "new THREE.Vector3(" + vertex.x.toFixed(decimalPlaces) + "," + vertex.y.toFixed(decimalPlaces) + "," + vertex.z.toFixed(decimalPlaces) + ")"
+        }).join(",") + "]";
+
+    var f = "[" + panel.geometry.faces.map(function (face) {
+            return "new THREE.Face3(" + face.a + "," + face.b + "," + face.c + ")"
+        }).join(",") + "]";
+
+    console.log("panelFixture['" + panel.name + "'] = function() { var g = new THREE.Geometry(); g.vertices = " + v + "; g.faces = " + f + "; return new Panel({ name: '" + panel.name + "', geometry: g, material: {} }, null); }();")
 };

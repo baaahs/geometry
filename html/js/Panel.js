@@ -219,7 +219,7 @@ Panel.prototype.edges = function (panels) {
         var v1 = panels.getVertexByLocalId(segmentIds[0]).clone();
         var v2 = panels.getVertexByLocalId(segmentIds[1]).clone();
 
-        return new Edge(this, v1, v2, panels.panelsByEdge[segment]);
+        return new Edge(this, v1, v2, panels.panelsByEdge[segmentIds.sort().join(",")]);
     }.bind(this));
 };
 

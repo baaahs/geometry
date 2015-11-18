@@ -8,7 +8,7 @@ function LabelViewer(panels, container) {
 
 LabelViewer.prototype.draw = function () {
     this.panels.all().forEach(function (panel) {
-        //if (panel.name == '7D') {
+        //if (panel.name == '7P') {
         panel.edges(panels).forEach(function(edge) {
             var label = this.drawOne(edge);
             this.labels.push(label);
@@ -28,8 +28,8 @@ LabelViewer.prototype.drawOne = function (edge) {
     //console.log(edge.panel.name, 'v1', v1, 'v2', v2, '*** rotated');
 
     var vector = v1.clone().sub(v2);
-    var angle = Math.atan2(vector.y, vector.x) / (2 * Math.PI) * 360;
-    console.log(edge.panel.name, vector, angle);
+    var angle = Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+    //console.log('endpoints of edge between ', edge.panel.name, 'and', edge.otherPanel.name, ':', v1, v2, 'angle:', angle);
 
     return new Label(edge, angle);
 };
@@ -51,14 +51,21 @@ function Label(edge, angle) {
     // no upside-downsies
     if (angle > 90) {
         angle -= 180;
-        upperEdge = true;
+        upperEdge = !upperEdge;
     }
     if (angle < -90) {
         angle += 180;
-        upperEdge = true;
+        upperEdge = !upperEdge;
     }
 
     this.dom = this.createDiv('label');
+
+    //var borderLeft = this.createDiv('label-border-left');
+    //borderLeft.innerText = "x: 14'4 1/2\"\n" +
+    //    "y:  7'11 3/8\"\n" +
+    //    "z:  4' 3 1/3\"";
+    //this.dom.appendChild(borderLeft);
+
     var nameDiv = this.createDiv('name');
     var re = this.panel.name.match(/^(.+?)([DP]?)$/);
     var nameClass = 'name' + this.panel.name.length;
@@ -76,7 +83,7 @@ function Label(edge, angle) {
     nameDiv.style.transform = 'rotate(' + angle + 'deg)';
 
     // show label rotated:
-    //this.dom.style.transform = 'rotate(' + (0 - angle) + 'deg)';
+    this.dom.style.transform = 'rotate(' + (0 - angle) + 'deg)';
 
     if (edge.otherPanel && edge.otherPanel.isPanel()) {
         var otherPanelName = edge.otherPanel ? edge.otherPanel.name : '';

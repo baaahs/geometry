@@ -32,16 +32,6 @@ function Label(edge) {
 
     var upperEdge = false;
 
-    // no upside-downsies
-    //if (angle > 90) {
-    //    angle -= 180;
-    //    upperEdge = !upperEdge;
-    //}
-    //if (angle < -90) {
-    //    angle += 180;
-    //    upperEdge = !upperEdge;
-    //}
-
     this.dom = this.createDiv('label');
 
     //var borderLeft = this.createDiv('label-border-left');

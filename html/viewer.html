@@ -297,6 +297,7 @@
         <input type="checkbox" id="flip-panels"/> <label for="flip-panels">Flip</label>
         |
         <label for="caption-input">Caption:</label> <textarea id="caption-input" width="20" height="2"></textarea>
+        <label for="show-input">Filter RE:</label> <input type="text" id="show-input" width="20"/>
       </p>
 
       <p>
@@ -361,6 +362,9 @@
         });
         document.getElementById('caption-input').addEventListener('keyup', function (e) {
           mapViewer.setCaption(e.target.value);
+        });
+        document.getElementById('show-input').addEventListener('keyup', function (e) {
+          mapViewer.filterPanels(new RegExp(e.target.value));
         });
         var mapCaption = document.getElementById('map-caption');
         mapCaption.addEventListener('mousedown', function (e) {

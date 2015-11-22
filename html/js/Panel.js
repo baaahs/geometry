@@ -1,6 +1,7 @@
 function Panel(mesh, info) {
     this.mesh = mesh;
     this.name = mesh.name;
+    this.longName = mesh.name;
     this.info = info;
     if (this.info == null) {
         console.log('No info for ' + this.name + '.');
@@ -13,19 +14,9 @@ function Panel(mesh, info) {
         label.className = 'panel-label';
         label.innerHTML = '<div class="name">' + this.name + "</div>";
         if (this.info) {
+            this.longName += "\n" + this.info.section;
             label.innerHTML += '<div class="section">' + this.info.section + '</div>';
         }
-
-        // invert sides
-        //this.geometry.vertices = this.geometry.vertices.map(function(v) {
-        //    v = v.clone();
-        //    v.z = v.z < 0 ? -200 - v.z : 200 - v.z;
-        //    return v;
-        //});
-
-        // transparent panels
-        //this.mesh.material.transparent = true;
-        //this.mesh.material.opacity = 0.9;
 
         this.label = label;
 
@@ -40,6 +31,11 @@ function Panel(mesh, info) {
 
     this.mesh.material.color = this.color;
 
+    this.computeFaceNormal();
+    this.flipped = false;
+}
+
+Panel.prototype.computeFaceNormal = function () {
     this.mesh.geometry.computeFaceNormals();
     var v = new THREE.Vector3(0);
     this.mesh.geometry.faces.forEach(function (face) {
@@ -47,9 +43,7 @@ function Panel(mesh, info) {
     });
     v.divideScalar(this.mesh.geometry.faces.length);
     this.normal = v;
-
-    this.flipped = false;
-}
+};
 
 Panel.prototype.isPanel = function () {
     return this.name != 'Face' && this.name != 'Tail' && this.name.indexOf('Ear') == -1 && this.name.indexOf('Eye') == -1;
@@ -67,16 +61,12 @@ Panel.prototype.isType = function (type) {
 
 Panel.prototype.setVisibility = function (visible) {
     this.mesh.visible = visible;
-    this.outline.visible = visible;
-    if (visible) {
-        this.label.classList.remove('invisible');
-    } else {
-        this.label.classList.add('invisible');
-    }
+    if (this.outline) this.outline.visible = visible;
+    this.label.classList.toggle('invisible', !visible);
 };
 
-Panel.prototype.flip = function(inverted) {
-    this.geometry.faces.forEach(function(face) {
+Panel.prototype.flip = function (inverted) {
+    this.geometry.faces.forEach(function (face) {
         var verts = [face.a, face.b, face.c];
         face.a = verts[2];
         face.c = verts[0];
@@ -119,13 +109,13 @@ Panel.prototype.getCentroid = function () {
 
 Panel.prototype.hideLabel = function () {
     //if (!this.label.classList.contains('hidden')) {
-        this.label.classList.add('hidden');
+    this.label.classList.add('hidden');
     //}
 };
 
 Panel.prototype.showLabel = function () {
     //if (this.label.classList.contains('hidden')) {
-        this.label.classList.remove('hidden');
+    this.label.classList.remove('hidden');
     //}
 };
 
@@ -139,7 +129,7 @@ Panel.prototype.positionLabel = function (mapViewer) {
     var centerPixels = mapViewer.toScreenPosition(center);
 
     var box = new THREE.Box2();
-    this.geometry.vertices.forEach(function(v) {
+    this.geometry.vertices.forEach(function (v) {
         var position = mapViewer.toScreenPosition(this.mesh.localToWorld(v.clone()));
         box.expandByPoint(position);
     }.bind(this));
@@ -214,7 +204,7 @@ Panel.prototype.positionLabel = function (mapViewer) {
 };
 
 Panel.prototype.edges = function (panels) {
-    return this.outlineSegments.map(function(segment) {
+    return this.outlineSegments.map(function (segment) {
         var segmentIds = segment.split(",");
         var v1 = panels.getVertexByLocalId(segmentIds[0]).clone();
         var v2 = panels.getVertexByLocalId(segmentIds[1]).clone();
@@ -238,16 +228,14 @@ function Edge(panel, v1, v2, allPanels) {
     }
 }
 
-Edge.prototype.angle = function() {
+Edge.prototype.angle = function () {
     var quaternion = new THREE.Quaternion();
     quaternion.setFromUnitVectors(this.panel.normal, new THREE.Vector3(0, 0, 1));
+    quaternion.x = 0; // never rotate around the x axis or some angles (F10P, F11) come out wonky…
 
-    //console.log(edge.panel.name, 'v1', edge.v1, 'v2', edge.v2);
     var v1 = this.v1.clone().applyQuaternion(quaternion);
     var v2 = this.v2.clone().applyQuaternion(quaternion);
-    //console.log(edge.panel.name, 'v1', v1, 'v2', v2, '*** rotated');
 
     var vector = v1.clone().sub(v2);
     return Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
-    //console.log('endpoints of edge between ', edge.panel.name, 'and', edge.otherPanel.name, ':', v1, v2, 'angle:', angle);
 };

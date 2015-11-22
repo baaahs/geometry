@@ -5,11 +5,12 @@ function Panels() {
     this.panelsByEdge = {};
 
     var panelInfos = {};
-    for (var i in BAAAHS.Geometry.PANEL_MAP) {
-        var panelInfoA = BAAAHS.Geometry.PANEL_MAP[i];
+
+    Object.keys(BAAAHS.Geometry.PANEL_MAP).forEach(function (key) {
+        var panelInfoA = BAAAHS.Geometry.PANEL_MAP[key];
         var panelInfo = new PanelInfo(panelInfoA[0], panelInfoA[1], panelInfoA[2]);
         panelInfos[panelInfo.name] = panelInfo;
-    }
+    });
     this.infos = panelInfos;
 }
 
@@ -28,13 +29,16 @@ Panels.prototype.load = function (modelUrl, callback) {
         var object = event;
         console.log('Loaded model:', object);
         this.model = object;
-//      console.log(object);
 
         object.traverse(function (child) {
-//        console.log(child);
             if (child instanceof THREE.Mesh) {
                 child.geometry = new THREE.Geometry().fromBufferGeometry(child.geometry);
-                child.geometry.computeFaceNormals();
+
+                // center panel on its vertices, and reposition it within the parent to compensate…
+                child.geometry.computeBoundingBox();
+                var offset = child.geometry.boundingBox.center();
+                child.geometry.translate(-offset.x, -offset.y, -offset.z);
+                child.position.add(offset);
 
                 var info = this.infos[child.name];
                 var panel = new Panel(child, info);
@@ -68,7 +72,7 @@ Panels.prototype.add = function (panel) {
 
 //    if (panel.name == '37D')
     this.inventory(panel);
-    //this.emitFixtureCodeFor(panel);
+    this.emitFixtureCodeFor(panel);
 };
 
 Panels.prototype.inventory = function (panel) {
@@ -109,35 +113,25 @@ Panels.prototype.inventory = function (panel) {
 
 //    console.log("Outline for " + panel.name + ":", outlineSegments);
 
-    var lineGroup = new THREE.Group();
+    var lineGroup = new THREE.Object3D();
+    lineGroup.position.add(panel.mesh.position);
     var lineColor = panel.color.clone().multiplyScalar(0.1);
     var material = new THREE.LineBasicMaterial({color: lineColor, linewidth: 3});
     material.overdraw = 1;
 
-    function addLine(segmentKey, offset) {
+    outlineSegments.forEach(function (segmentKey) {
         var outlineGeometry = new THREE.Geometry();
         var segmentIds = segmentKey.split(",");
         var v1 = self.getVertexByLocalId(segmentIds[0]).clone();
         var v2 = self.getVertexByLocalId(segmentIds[1]).clone();
-        if (panel.isSide()) {
-            v1.z = v1.z * offset;
-            v2.z = v2.z * offset;
-        } else {
-            v1.x = v1.x * offset;
-            v2.x = v2.x * offset;
-        }
-        //v1.y = v1.y * 1.001;
-        //v2.y = v2.y * 1.001;
         outlineGeometry.vertices.push(v1);
         outlineGeometry.vertices.push(v2);
         //outlineGeometry.vertices.reverse();
         lineGroup.add(new THREE.Line(outlineGeometry, material));
-    }
-
-    outlineSegments.forEach(function (segmentKey) {
-        addLine(segmentKey, 1.001);
-        addLine(segmentKey, 0.999);
     });
+
+    lineGroup.position.add(panel.normal.clone().multiplyScalar(.1));
+
     panel.outline = lineGroup;
 
     outlineSegments.forEach(function (segmentKey) {

@@ -102,6 +102,12 @@ MapViewer.prototype.setCaption = function(s) {
     this.caption.innerHTML = this.caption.innerHTML.replace(/<br>(.*)/, "<br><small>$1</small>");
 };
 
+MapViewer.prototype.filterPanels = function(re) {
+    this.panels.all().forEach(function(panel) {
+        panel.setVisibility(re.test(panel.longName));
+    });
+};
+
 MapViewer.prototype.toggleToolsVisibility = function() {
     this.toolsVisible = !this.toolsVisible;
 

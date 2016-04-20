@@ -239,3 +239,28 @@ Edge.prototype.angle = function () {
     var vector = v1.clone().sub(v2);
     return Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
 };
+
+Edge.prototype.length = function () {
+    return this.v1.distanceTo(this.v2);
+};
+
+Edge.prototype.lengthImperial = function () {
+    var length = this.length() + 0.0;
+    var feet = Math.floor(length / 12);
+    var inches = Math.floor(length % 12);
+    var fractionalInches = length % 12 - inches;
+    if (fractionalInches < .25 / 2) {
+        fractionalInches = "¼";
+    } else if (fractionalInches < .5 / 2) {
+        fractionalInches = "½";
+    } else if (fractionalInches < .75 / 2) {
+        fractionalInches = "¾";
+    } else {
+        fractionalInches = "";
+        inches++;
+    }
+
+    var inchesWithFraction = inches + fractionalInches;
+
+    return (feet > 0 ? feet + "'" : '') + inchesWithFraction + '"';
+};

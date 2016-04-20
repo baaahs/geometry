@@ -78,8 +78,14 @@ Panels.prototype.add = function (panel) {
 Panels.prototype.inventory = function (panel) {
     var self = this;
     var localVertexIds = panel.geometry.vertices.map(function (vertex) {
-        return self.localVertexIdFor(vertex);
+        var globalVertex = vertex.clone().add(panel.mesh.position);
+        return self.localVertexIdFor(globalVertex);
     });
+
+    console.log('panel vertex global ids', panel.name, localVertexIds, panel.geometry.vertices.map(function (vertex) {
+        return vertex.clone().add(panel.mesh.position);
+    }));
+
 
     var seenSegments = {};
     var outlineSegments = [];
@@ -122,8 +128,8 @@ Panels.prototype.inventory = function (panel) {
     outlineSegments.forEach(function (segmentKey) {
         var outlineGeometry = new THREE.Geometry();
         var segmentIds = segmentKey.split(",");
-        var v1 = self.getVertexByLocalId(segmentIds[0]).clone();
-        var v2 = self.getVertexByLocalId(segmentIds[1]).clone();
+        var v1 = self.getVertexByLocalId(segmentIds[0]).clone().sub(panel.mesh.position);
+        var v2 = self.getVertexByLocalId(segmentIds[1]).clone().sub(panel.mesh.position);
         outlineGeometry.vertices.push(v1);
         outlineGeometry.vertices.push(v2);
         //outlineGeometry.vertices.reverse();
@@ -134,8 +140,10 @@ Panels.prototype.inventory = function (panel) {
 
     panel.outline = lineGroup;
 
+    var normalizedOutlineSegments = [];
     outlineSegments.forEach(function (segmentKey) {
         var segmentKeyNorm = segmentsByKey[segmentKey].sort().join(",");
+        normalizedOutlineSegments.push(segmentKeyNorm);
 
         var panelsForEdge = self.panelsByEdge[segmentKeyNorm];
         if (panelsForEdge == null) {
@@ -145,11 +153,15 @@ Panels.prototype.inventory = function (panel) {
         panelsForEdge.push(panel);
     });
 
+    console.log('panel outline', panel.name, normalizedOutlineSegments);
+
     panel.outlineSegments = outlineSegments;
 };
 
 Panels.prototype.localVertexIdFor = function (vertex) {
-    var vertexKey = vertex.x + ',' + vertex.y + ',' + vertex.z;
+    // why is the precision off here after just addition?
+    var precision = 3;
+    var vertexKey = vertex.x.toFixed(precision) + ',' + vertex.y.toFixed(precision) + ',' + vertex.z.toFixed(precision);
     var localId = this.verticesByKey[vertexKey];
     if (localId == null) {
         localId = this.vertices.length;

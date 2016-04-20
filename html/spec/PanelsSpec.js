@@ -38,7 +38,7 @@ describe("Panels", function () {
                 });
             });
 
-            it("calculates panel outer edges for 7D     ", function () {
+            it("calculates panel outer edges for 7D", function () {
                 var edges = panelFixture['7D'].edges(panels);
                 var vertices = edges.map(function (edge) {
                     return [[edge.v1.x, edge.v1.y, edge.v1.z], [edge.v2.x, edge.v2.y, edge.v2.z]];
@@ -54,6 +54,18 @@ describe("Panels", function () {
                 expect(edges.map(function (edge) {
                     return edge.otherPanel.name + " @ " + edge.angle().toFixed(0) + "°";
                 })).toEqual(['2D @ 94°', '8D @ -15°', '13D @ -136°', '6D @ 168°']);
+            });
+
+            it("calculates neighboring panel for each edge", function () {
+                var edges = panelFixture['6D'].edges(panels);
+                console.log(edges);
+            });
+
+            it("calculates length edge", function () {
+                var edges = panelFixture['6D'].edges(panels);
+                expect(edges.map(function (edge) {
+                    return edge.otherPanel.name + " @ " + edge.lengthImperial();
+                })).toEqual(["5D @ 7'5\"", "7D @ 3'2\"", "12D @ 5'9\""]);
             });
 
             it("calculates panel outer edges for 6D", function () {

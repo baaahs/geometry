@@ -234,6 +234,47 @@
       z-index: -1;
     }
 
+    .label .edge-length {
+      position: absolute;
+      right: 4em;
+      bottom: 0;
+      z-index: -1;
+    }
+
+    .label .circle {
+      position: absolute;
+      border: 1px solid black;
+      border-radius: 50%;
+    }
+
+    .label .circle.outer {
+      width: 3.5em;
+      height: 3.5em;
+      right: 4.5em;
+      top: .5em;
+      z-index: -1;
+    }
+
+    .label .circle.inner {
+      width: 2em;
+      height: 2em;
+      right: 5.25em;
+      top: 1.25em;
+      z-index: -1;
+    }
+
+    .label.side-d .circle {
+      background-color: #cc6666;
+    }
+
+    .label.side-p .circle {
+      background-color: #669966;
+    }
+
+    #labels-periodicity {
+      width: 3em;
+    }
+
     #labels-controls {
       text-align: right;
       width: 100%;
@@ -313,6 +354,9 @@
 <div id="labels-tab" class="tab">
   <div id="labels-controls">
     <form>
+      <input type="checkbox" id="labels-multiple" checked/>
+      <label for="labels-periodicity">Label every: </label><input type="text" id="labels-periodicity" value="4"/> feet
+      &nbsp; &nbsp;
       <label for="labels-filter">Filter RE: </label><input type="text" id="labels-filter"/>
     </form>
   </div>
@@ -399,6 +443,21 @@
         document.getElementById('labels-filter').addEventListener('keyup', function(e) {
           labelViewer.filterLabels(new RegExp(e.target.value));
         });
+
+        var labelPeriodicity = document.getElementById('labels-periodicity');
+        var labelMultiple = document.getElementById('labels-multiple');
+
+        function multiLabels() {
+          labelViewer.labelsEvery(labelMultiple.checked ? parseFloat(labelPeriodicity.value) * 12 : 0);
+        }
+
+        labelPeriodicity.addEventListener('keyup', function(e) {
+          multiLabels();
+        });
+        labelMultiple.addEventListener('click', function(e) {
+          multiLabels();
+        });
+        multiLabels();
       }
     }
 

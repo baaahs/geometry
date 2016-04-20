@@ -2,17 +2,24 @@ function LabelViewer(panels, container) {
     this.panels = panels;
     this.container = container;
     this.labels = [];
+    this.labelPerDistance = 0;
 
     this.draw();
 }
 
 LabelViewer.prototype.draw = function () {
+    this.container.innerHTML = '';
     this.panels.all().forEach(function (panel) {
         //if (panel.name == '7P') {
         panel.edges(panels).forEach(function(edge) {
-            var label = new Label(edge);
-            this.labels.push(label);
-            this.container.appendChild(label.dom);
+            var count = this.labelPerDistance == 0 ? 1 : Math.ceil(edge.length() / this.labelPerDistance);
+            if (count < 1) count = 1;
+
+            for (var i = 0; i < count; i++) {
+                var label = new Label(edge);
+                this.labels.push(label);
+                this.container.appendChild(label.dom);
+            }
         }.bind(this));
         //}
     }.bind(this));
@@ -23,6 +30,11 @@ LabelViewer.prototype.filterLabels = function(re) {
         var matchesPanel = re.test(label.panel.name);
         label.dom.classList.toggle('invisible', !matchesPanel);
     });
+};
+
+LabelViewer.prototype.labelsEvery = function(distance) {
+    this.labelPerDistance = distance;
+    this.draw();
 };
 
 function Label(edge) {
@@ -43,7 +55,9 @@ function Label(edge) {
     var nameDiv = this.createDiv('name');
     var re = this.panel.name.match(/^(.+?)([DP]?)$/);
     var nameClass = 'name' + this.panel.name.length;
-    nameDiv.innerHTML = '<div class="name ' + nameClass + '">' + re[1] + '<span class="side">' + re[2] + '</span></div>';
+    var side = re[2];
+    this.dom.classList.add('side-' + side.toLowerCase());
+    nameDiv.innerHTML = '<div class="name ' + nameClass + '">' + re[1] + '<span class="side">' + side + '</span></div>';
     if (this.panel.info) {
         var sectionClass = 'section';
         if (this.panel.info.section.length > 10) {
@@ -57,9 +71,10 @@ function Label(edge) {
     nameDiv.style.transform = 'rotate(' + angle + 'deg)';
 
     // show label rotated:
+    var isUpsideDownsy = angle > 90 || angle < -90;
     if (false) {
         this.dom.style.transform = 'rotate(' + (0 - angle) + 'deg)';
-    } else if (angle > 90 || angle < -90) {
+    } else if (isUpsideDownsy) {
         // make text be printed right-side-up…
         this.dom.style.transform = 'rotate(180deg)';
     }
@@ -93,6 +108,23 @@ function Label(edge) {
     logo.src = 'BAAAHS2015LogoWithBorder-320x272.png';
     logo.style.transform = 'rotate(' + angle + 'deg)';
     this.dom.appendChild(logo);
+
+    var edgeLength = edge.lengthImperial();
+    var edgeLengthDiv = this.createDiv('edge-length', "⇤ " + edgeLength + " ⇥");
+    if (isUpsideDownsy) {
+        // make text be printed right-side-up…
+        edgeLengthDiv.style.transform = 'rotate(180deg)';
+    }
+    this.dom.appendChild(edgeLengthDiv);
+
+    var outerCircle = this.createDiv('circle');
+    outerCircle.classList.add('outer');
+    this.dom.appendChild(outerCircle);
+
+    var innerCircle = this.createDiv('circle');
+    innerCircle.classList.add('inner');
+    innerCircle.style.backgroundColor = '#' + this.panel.color.getHexString();
+    this.dom.appendChild(innerCircle);
 }
 
 Label.prototype.createDiv = function (clazz, innerText) {

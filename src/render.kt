@@ -1,15 +1,16 @@
-import javafx.geometry.Point3D
+
 import java.awt.*
-import java.awt.event.*
+import java.awt.event.MouseWheelListener
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
 import java.awt.geom.Point2D
 import java.io.File
-import java.io.FileWriter
 import java.util.*
 
 fun main(args: Array<String>) {
-  val file = File("./model.obj")
+  val file = File("./export-from-model.obj")
 
-  //  println("${model.faces.size()} faces: ${model.faces}")
+  //  println("${model.faces.size} faces: ${model.faces}")
 
   var near = true
   var pickProjection: (Model) -> Projection = { FrontProjection(it, near) }
@@ -18,8 +19,8 @@ fun main(args: Array<String>) {
 
   val frame = Frame(file.name)
   frame.setSize(600, 600)
-  frame.setVisible(true)
-  frame.setLayout(BorderLayout())
+  frame.isVisible = true
+  frame.layout = BorderLayout()
 
   var model = read(file)
   var view: ModelView? = null
@@ -56,9 +57,9 @@ fun main(args: Array<String>) {
 
   frame.addMouseWheelListener(MouseWheelListener { e ->
     perspectiveEyePosition = Vertex(
-        perspectiveEyePosition.x + if (!e.isAltDown() && !e.isMetaDown()) e.getPreciseWheelRotation() else 0.0,
-        perspectiveEyePosition.y + if (e.isMetaDown()) e.getPreciseWheelRotation() else 0.0,
-        perspectiveEyePosition.z + if (e.isAltDown()) e.getPreciseWheelRotation() else 0.0)
+        perspectiveEyePosition.x + if (!e.isAltDown && !e.isMetaDown) e.preciseWheelRotation else 0.0,
+        perspectiveEyePosition.y + if (e.isMetaDown) e.preciseWheelRotation else 0.0,
+        perspectiveEyePosition.z + if (e.isAltDown) e.preciseWheelRotation else 0.0)
 
     println(perspectiveEyePosition)
 
@@ -67,7 +68,7 @@ fun main(args: Array<String>) {
   })
 
   val controls = Container()
-  controls.setLayout(FlowLayout(FlowLayout.CENTER))
+  controls.layout = FlowLayout(FlowLayout.CENTER)
 
   val sideButton = Button("Side")
   sideButton.addActionListener({ event -> pickProjection = { SideProjection(it, near) }; refreshView() })
@@ -225,19 +226,19 @@ class Drawable(val distance: Double, val runnable: () -> Unit)
 
 class ModelView(val model: Model, val projection: Projection) : Component() {
   override fun paint(g: Graphics) {
-    val faceFont = g.getFont()
+    val faceFont = g.font
     val faceFontFM = g.getFontMetrics(faceFont)
 
-    val groupFont = faceFont.deriveFont(Font.BOLD, faceFont.getSize() * 1.2f)
+    val groupFont = faceFont.deriveFont(Font.BOLD, faceFont.size * 1.2f)
     val groupFontFM = g.getFontMetrics(groupFont)
 
     val random = Random(0)
 
-    val width = getWidth()
-    val height = getHeight()
+    val width = width
+    val height = height
 
-    fun tX(p: Point2D): Int = (p.getX() * (width - 60) + 30).toInt()
-    fun tY(p: Point2D): Int = (p.getY() * (height - 60) + 30).toInt()
+    fun tX(p: Point2D): Int = (p.x * (width - 60) + 30).toInt()
+    fun tY(p: Point2D): Int = (p.y * (height - 60) + 30).toInt()
 
     g.clearRect(0, 0, width, height)
 
@@ -264,36 +265,36 @@ class ModelView(val model: Model, val projection: Projection) : Component() {
         val center = projection.project(face.center())
 
         drawables.add(Drawable(distance, {
-          g.setColor(fillColor)
+          g.color = fillColor
           g.fillPolygon(polygon)
 
-          g.setColor(strokeColor)
+          g.color = strokeColor
           g.drawPolygon(polygon)
 
           val s = "#${face.lineNumber}"
-          g.setFont(faceFont)
+          g.font = faceFont
           g.drawString(s,
               tX(center) - faceFontFM.stringWidth(s) / 2,
-              tY(center) + faceFontFM.getHeight() / 2)
+              tY(center) + faceFontFM.height / 2)
         }))
       }
 
       //      if (projection.isVisible(group.center())) {
       drawables.add(Drawable(nearest - 0.00001, {
-        g.setFont(groupFont)
+        g.font = groupFont
 
-        g.setColor(Color.BLACK)
+        g.color = Color.BLACK
         val center = projection.project(group.center())
         g.drawString(group.label,
             tX(center) - groupFontFM.stringWidth(group.label) / 2,
-            tY(center) - groupFontFM.getHeight() / 2)
+            tY(center) - groupFontFM.height / 2)
       }))
       //      }
     }
 
-    drawables.sortBy { 0 - it.distance }.forEach { it.runnable() }
+    drawables.sortedBy { 0 - it.distance }.forEach { it.runnable() }
 
-    g.setFont(faceFont)
+    g.font = faceFont
   }
 
   fun fade(color: Color, distance: Double): Color {
@@ -303,6 +304,6 @@ class ModelView(val model: Model, val projection: Projection) : Component() {
     fun fade(value: Int): Int {
       return Math.min(255, (value * clarity + 200 * fogginess).toInt())
     }
-    return Color(fade(color.getRed()), fade(color.getGreen()), fade(color.getBlue()))
+    return Color(fade(color.red), fade(color.green), fade(color.blue))
   }
 }

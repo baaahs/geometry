@@ -1,8 +1,5 @@
-import javafx.geometry.Point3D
-import java.io.BufferedWriter
+
 import java.io.File
-import java.io.FileWriter
-import kotlin.text.Regex
 
 class Sheep(val model: Model) {
   val panels: MutableList<Panel> = arrayListOf()
@@ -19,7 +16,7 @@ data class Panel(val name: String, private val faces: List<Face>) {
       var expected = 0
       faces.map { face ->
         if (name == "19P") println("face!")
-        val vertexCount = face.vertices.size()
+        val vertexCount = face.vertices.size
         face.vertices.forEachIndexed { i, vertex ->
           val edge = Edge(face.vertices[i], face.vertices[(i + 1) % vertexCount])
           if (name == "19P") println(edge)
@@ -27,7 +24,7 @@ data class Panel(val name: String, private val faces: List<Face>) {
           expected++
         }
       }
-      if (edges.size() != expected) {
+      if (edges.size != expected) {
         println("Eliminated duplicate edges for ${name}!")
       }
       return edges.toList()
@@ -35,7 +32,7 @@ data class Panel(val name: String, private val faces: List<Face>) {
 }
 
 data class Edge(val a: Vertex, val b: Vertex) {
-  transient val length: Double
+  val length: Double
     get() = a.distance(b)
 
   override fun equals(other: Any?): Boolean {
@@ -55,8 +52,8 @@ class EdgeCalculator(val sheep: Sheep) {
   fun dumpEdges(csv: CSV) {
     csv.add("Panel", "Edge Count", "Edge Lengths")
     sheep.panels.forEach { panel ->
-      val edgeLengths = panel.outerEdges.map { it.length }.sortDescending().map { java.lang.String.format("%.2f", it / 12) }
-      val args = arrayListOf(panel.name, edgeLengths.size()).let { it.addAll(edgeLengths); it }
+      val edgeLengths = panel.outerEdges.map { it.length }.sortedDescending().map { java.lang.String.format("%.2f", it / 12) }
+      val args = arrayListOf(panel.name, edgeLengths.size).let { it.addAll(edgeLengths); it }
       csv.add(*args.toArray())
     }
   }

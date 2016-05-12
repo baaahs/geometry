@@ -11,7 +11,7 @@ LabelViewer.prototype.draw = function () {
     this.container.innerHTML = '';
     this.panels.all().forEach(function (panel) {
         //if (panel.name == '7P') {
-        panel.edges(panels).forEach(function(edge) {
+        panel.edges().forEach(function(edge) {
             var count = this.labelPerDistance == 0 ? 1 : Math.ceil(edge.length() / this.labelPerDistance);
             if (count < 1) count = 1;
 

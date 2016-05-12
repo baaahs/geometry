@@ -16,10 +16,17 @@
 
   <script src="js/MapViewer.js"></script>
   <script src="js/LabelViewer.js"></script>
+  <script src="js/PackingViewer.js"></script>
   <!--<script src="http://mrdoob.github.com/three.js/examples/fonts/helvetiker_regular.typeface.js"></script>-->
 
   <style type="text/css">
     /*noinspection CssUnusedSymbol*/
+    @media print {
+      .no-print, .no-print * {
+        display: none !important;
+      }
+    }
+
     #tabs {
       position: absolute;
       left: 10px;
@@ -299,14 +306,22 @@
     .tools-hidden .tool {
       display: none;
     }
+
+    #packing-render-container {
+      height: 300px;
+      position: relative;
+      font-family: Futura;
+    }
   </style>
 </head>
 <body>
 
-<div id="tabs" class="tool">
+<div id="tabs" class="tool no-print">
   <a href="#map">Map</a>
   |
   <a href="#labels">Labels</a>
+  |
+  <a href="#packing">Packing</a>
 </div>
 
 <div id="map-tab" class="tab">
@@ -352,7 +367,7 @@
 </div>
 
 <div id="labels-tab" class="tab">
-  <div id="labels-controls">
+  <div id="labels-controls" class="no-print">
     <form>
       <input type="checkbox" id="labels-multiple" checked/>
       <label for="labels-periodicity">Label every: </label><input type="text" id="labels-periodicity" value="4"/> feet
@@ -361,6 +376,14 @@
     </form>
   </div>
   <div id="label-render-container"></div>
+</div>
+
+<div id="packing-tab" class="tab">
+  <br/><br/>
+  <div id="packing-controls" class="no-print">
+  </div>
+  <pre id="packing-render-text"></pre>
+  <div id="packing-render-container"></div>
 </div>
 
 <script type="application/javascript">
@@ -377,6 +400,7 @@
 
   var mapViewer = null;
   var labelViewer = null;
+  var packingViewer = null;
 
   function showTab(name) {
     if (name == '') name = 'map';
@@ -459,6 +483,22 @@
         });
         multiLabels();
       }
+    }
+
+    if (name == 'packing') {
+      if (packingViewer == null) {
+        packingViewer = new PackingViewer(panels, document.getElementById('packing-render-container'),
+            document.getElementById('packing-render-text'));
+
+//        document.getElementById('packings-filter').addEventListener('keyup', function(e) {
+//          packingViewer.filterPackings(new RegExp(e.target.value));
+//        });
+
+//        multiPackings();
+      }
+      packingViewer.startRendering();
+    } else {
+      packingViewer.stopRendering();
     }
 
     tabs.forEach(function (tabEl) {

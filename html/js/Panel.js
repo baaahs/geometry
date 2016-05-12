@@ -203,21 +203,117 @@ Panel.prototype.positionLabel = function (mapViewer) {
     this.label.style.fontSize = fontSize + 'pt';
 };
 
-Panel.prototype.edges = function (panels) {
-    return this.outlineSegments.map(function (segment) {
-        var segmentIds = segment.split(",");
-        var v1 = panels.getVertexByLocalId(segmentIds[0]).clone();
-        var v2 = panels.getVertexByLocalId(segmentIds[1]).clone();
+Panel.prototype.edges = function () {
+    return this.outerEdges;
+};
 
-        return new Edge(this, v1, v2, panels.panelsByEdge[segmentIds.sort().join(",")]);
+Panel.prototype.flattened = function() {
+    /// ignore dimensionality here, just get outline, normalized
+    var quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(this.normal, new THREE.Vector3(0, 0, 1));
+
+    var flatGeometry = new THREE.Geometry();
+    var edges = this.edges();
+    flatGeometry.vertices.push(edges[0].v1.clone().applyQuaternion(quaternion));
+    edges.forEach(function (edge) {
+        flatGeometry.vertices.push(edge.v2.clone().applyQuaternion(quaternion));
+    });
+
+    flatGeometry.vertices.forEach(function (vertex) {
+        vertex.z = 0;
+    });
+
+    if (!flatGeometry.vertices[flatGeometry.vertices.length - 1].equals(flatGeometry.vertices[0])) {
+        flatGeometry.vertices.push(flatGeometry.vertices[0].clone());
+    }
+
+    flatGeometry.center();
+    return flatGeometry;
+
+
+
+
+    var face0 = this.mesh.geometry.faces[0];
+    var normal = face0.normal;
+    var flatGeometry = this.mesh.geometry.clone();
+    var vertices = new Vertices();
+
+    for (var i = 0; i < flatGeometry.faces.length; i++) {
+        var face = flatGeometry.faces[i];
+        face.a = vertices.idFor(flatGeometry.vertices[face.a]);
+        face.b = vertices.idFor(flatGeometry.vertices[face.b]);
+        face.c = vertices.idFor(flatGeometry.vertices[face.c]);
+    }
+    flatGeometry.vertices = vertices.unique;
+
+
+    var quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(normal, new THREE.Vector3(0, 0, 1));
+    // quaternion.x = 0; // never rotate around the x axis or some angles (F10P, F11) come out wonky…
+    flatGeometry.vertices.forEach(function (vertex) {
+        vertex.applyQuaternion(quaternion);
+        // vertex.z -= flatGeometry.vertices[0].z;
     }.bind(this));
+
+    var vertexFace = [];
+    vertexFace[face0.a] = face0;
+    vertexFace[face0.b] = face0;
+    vertexFace[face0.c] = face0;
+
+    for (var i = 1; i < flatGeometry.faces.length; i++) {
+        flatGeometry.computeFaceNormals();
+
+        face = flatGeometry.faces[i];
+        if (vertexFace[face.a] && vertexFace[face.b]) {
+            console.log("a & b");
+        } else if (vertexFace[face.b] && vertexFace[face.c]) {
+            console.log("b & c");
+        } else if (vertexFace[face.a] && vertexFace[face.c]) {
+            console.log("a & c");
+        } else {
+            console.log("none!");
+        }
+
+
+        for (var j = i; j < flatGeometry.faces.length; j++) {
+            face = flatGeometry.faces[j];
+            quaternion.setFromUnitVectors(flatGeometry.faces[i].normal, new THREE.Vector3(0, 0, 1));
+
+            flatGeometry.vertices.push(flatGeometry.vertices[face.a].clone().applyQuaternion(quaternion));
+            face.a = flatGeometry.vertices.length - 1;
+
+            flatGeometry.vertices.push(flatGeometry.vertices[face.b].clone().applyQuaternion(quaternion));
+            face.b = flatGeometry.vertices.length - 1;
+
+            flatGeometry.vertices.push(flatGeometry.vertices[face.c].clone().applyQuaternion(quaternion));
+            face.c = flatGeometry.vertices.length - 1;
+
+            // [face.a, face.b, face.c].forEach(function (vertexIdx) {
+            //     flatGeometry.vertices[vertexIdx].applyQuaternion(quaternion);
+            // });
+        }
+    }
+
+
+
+
+
+
+    // flatGeometry.faces.forEach(function (face) {
+    //     console.log(this.name, face.normal);
+    // }.bind(this));
+    // var v1 = this.v1.clone().applyQuaternion(quaternion);
+    // var v2 = this.v2.clone().applyQuaternion(quaternion);
+    //
+    // var vector = v1.clone().sub(v2);
+    // return Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+    return flatGeometry;
 };
 
 function Edge(panel, v1, v2, allPanels) {
     this.panel = panel;
     this.v1 = v1;
     this.v2 = v2;
-    this.allPanels = allPanels;
 
     if (allPanels.length == 2) {
         if (allPanels[0].name == panel.name) {

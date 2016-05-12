@@ -1,7 +1,6 @@
 function Panels() {
     this.panels = {};
-    this.vertices = [];
-    this.verticesByKey = {};
+    this.allVertices = new Vertices();
     this.panelsByEdge = {};
 
     var panelInfos = {};
@@ -72,19 +71,18 @@ Panels.prototype.add = function (panel) {
 
 //    if (panel.name == '37D')
     this.inventory(panel);
-    this.emitFixtureCodeFor(panel);
+    // this.emitFixtureCodeFor(panel);
 };
 
 Panels.prototype.inventory = function (panel) {
-    var self = this;
     var localVertexIds = panel.geometry.vertices.map(function (vertex) {
         var globalVertex = vertex.clone().add(panel.mesh.position);
-        return self.localVertexIdFor(globalVertex);
-    });
+        return this.allVertices.idFor(globalVertex);
+    }.bind(this));
 
-    console.log('panel vertex global ids', panel.name, localVertexIds, panel.geometry.vertices.map(function (vertex) {
-        return vertex.clone().add(panel.mesh.position);
-    }));
+    // console.log('panel vertex global ids', panel.name, localVertexIds, panel.geometry.vertices.map(function (vertex) {
+    //     return vertex.clone().add(panel.mesh.position);
+    // }));
 
 
     var seenSegments = {};
@@ -117,6 +115,71 @@ Panels.prototype.inventory = function (panel) {
         check(face.c, face.a);
     });
 
+    var segmentMap = {};
+    outlineSegments.forEach(function (segmentKey) {
+        var segmentIds = segmentKey.split(",");
+        if (!segmentMap[segmentIds[0]]) {
+            segmentMap[segmentIds[0]] = [segmentIds[1]];
+        } else {
+            segmentMap[segmentIds[0]].push(segmentIds[1]);
+        }
+        if (!segmentMap[segmentIds[1]]) {
+            segmentMap[segmentIds[1]] = [segmentIds[0]];
+        } else {
+            segmentMap[segmentIds[1]].push(segmentIds[0]);
+        }
+    });
+
+    var orderedOutlineSegments = [];
+    if (outlineSegments.length > 0) {
+        var startVid = outlineSegments[0].split(",")[0];
+        for (var i = 0; i < outlineSegments.length; i++) {
+            var dests = segmentMap[startVid];
+            if (!dests) {
+                console.log("huh? discontiniuty for " + panel.name + " at " + startVid);
+                break;
+            }
+            var nextVid;
+            if (segmentMap[dests[0]]) {
+                nextVid = segmentMap[startVid][0];
+            } else {
+                nextVid = segmentMap[startVid][1];
+            }
+            orderedOutlineSegments.push([startVid, nextVid]);
+            delete segmentMap[startVid];
+            startVid = nextVid;
+        }
+
+        // ensure we're going counter-clockwise
+        var prevSegment = orderedOutlineSegments[orderedOutlineSegments.length - 1];
+
+        var sum = 0;
+        orderedOutlineSegments.forEach(function (segment) {
+            var fromV = this.allVertices.getById(segment[0]);
+            var toV = this.allVertices.getById(segment[1]);
+            sum += (toV.x - fromV.x) * (toV.y - fromV.y);
+        }.bind(this));
+        console.log(panel.name, sum);
+
+        var clockwise = sum > 0;
+        if (clockwise) {
+            // clockwise, so reverse everything…
+            orderedOutlineSegments = orderedOutlineSegments.reverse();
+        }
+
+        orderedOutlineSegments = orderedOutlineSegments.map(function (segments) {
+            if (clockwise) {
+                return segments[1] + "," + segments[0];
+            } else {
+                return segments[0] + "," + segments[1];
+            }
+        })
+    }
+
+    outlineSegments = orderedOutlineSegments;
+
+    console.log(panel.name, orderedOutlineSegments);
+
 //    console.log("Outline for " + panel.name + ":", outlineSegments);
 
     var lineGroup = new THREE.Object3D();
@@ -128,13 +191,13 @@ Panels.prototype.inventory = function (panel) {
     outlineSegments.forEach(function (segmentKey) {
         var outlineGeometry = new THREE.Geometry();
         var segmentIds = segmentKey.split(",");
-        var v1 = self.getVertexByLocalId(segmentIds[0]).clone().sub(panel.mesh.position);
-        var v2 = self.getVertexByLocalId(segmentIds[1]).clone().sub(panel.mesh.position);
+        var v1 = this.allVertices.getById(segmentIds[0]).clone().sub(panel.mesh.position);
+        var v2 = this.allVertices.getById(segmentIds[1]).clone().sub(panel.mesh.position);
         outlineGeometry.vertices.push(v1);
         outlineGeometry.vertices.push(v2);
         //outlineGeometry.vertices.reverse();
         lineGroup.add(new THREE.Line(outlineGeometry, material));
-    });
+    }.bind(this));
 
     lineGroup.position.add(panel.normal.clone().multiplyScalar(.1));
 
@@ -145,36 +208,23 @@ Panels.prototype.inventory = function (panel) {
         var segmentKeyNorm = segmentsByKey[segmentKey].sort().join(",");
         normalizedOutlineSegments.push(segmentKeyNorm);
 
-        var panelsForEdge = self.panelsByEdge[segmentKeyNorm];
+        var panelsForEdge = this.panelsByEdge[segmentKeyNorm];
         if (panelsForEdge == null) {
             panelsForEdge = [];
-            self.panelsByEdge[segmentKeyNorm] = panelsForEdge;
+            this.panelsByEdge[segmentKeyNorm] = panelsForEdge;
         }
         panelsForEdge.push(panel);
-    });
+    }.bind(this));
 
-    console.log('panel outline', panel.name, normalizedOutlineSegments);
+    // console.log('panel outline', panel.name, normalizedOutlineSegments);
 
-    panel.outlineSegments = outlineSegments;
+    panel.outerEdges = outlineSegments.map(function (segmentKey) {
+        var segmentIds = segmentKey.split(",");
+        var v1 = this.allVertices.getById(segmentIds[0]).clone();
+        var v2 = this.allVertices.getById(segmentIds[1]).clone();
+        return new Edge(this, v1, v2, this.panelsByEdge[segmentIds.sort().join(",")]);
+    }.bind(this));
 };
-
-Panels.prototype.localVertexIdFor = function (vertex) {
-    // why is the precision off here after just addition?
-    var precision = 3;
-    var vertexKey = vertex.x.toFixed(precision) + ',' + vertex.y.toFixed(precision) + ',' + vertex.z.toFixed(precision);
-    var localId = this.verticesByKey[vertexKey];
-    if (localId == null) {
-        localId = this.vertices.length;
-        this.vertices.push(vertex);
-        this.verticesByKey[vertexKey] = localId;
-    }
-    return localId;
-};
-
-Panels.prototype.getVertexByLocalId = function (id) {
-    return this.vertices[id];
-};
-
 
 Panels.prototype.changePanelVisibility = function (type, visible) {
     this.all().forEach(function (panel) {
@@ -201,4 +251,26 @@ Panels.prototype.emitFixtureCodeFor = function (panel) {
         }).join(",") + "]";
 
     console.log("panelFixture['" + panel.name + "'] = buildFixturePanel('" + panel.name + "', " + v + ", " + f + ");")
+};
+
+function Vertices() {
+    this.unique = [];
+    this.byKey = {};
+}
+
+Vertices.prototype.idFor = function (vertex) {
+    // why is the precision off here after just addition?
+    var precision = 3;
+    var vertexKey = vertex.x.toFixed(precision) + ',' + vertex.y.toFixed(precision) + ',' + vertex.z.toFixed(precision);
+    var localId = this.byKey[vertexKey];
+    if (localId == null) {
+        localId = this.unique.length;
+        this.unique.push(vertex);
+        this.byKey[vertexKey] = localId;
+    }
+    return localId;
+};
+
+Vertices.prototype.getById = function (id) {
+    return this.unique[id];
 };

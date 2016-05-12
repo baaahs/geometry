@@ -80,6 +80,8 @@ function MapViewer(panels, container) {
 
     console.log("Sheep origin is", model.position);
 
+    this.updateMetrics();
+    
     this.camera.position.y = objCenter.y;
 //      this.camera.lookAt(this.lookAt);
     this.controls.target = this.lookAt;
@@ -97,15 +99,37 @@ function MapViewer(panels, container) {
     this.toolsVisible = true;
 }
 
+MapViewer.prototype.updateMetrics = function() {
+    var edgesLinearLength = 0;
+    var panelsSurfaceArea = 0;
+    
+    this.panels.all().forEach(function (panel) {
+        if (panel.isVisible()) {
+            edgesLinearLength += panel.edgesLinearLength();
+            panelsSurfaceArea += panel.surfaceArea();
+        }
+    });
+    document.getElementById('panel-misc-info-1').innerText = "Edges linear length: "
+        + MeasurementUtils.toPrettyFeetAndInches(edgesLinearLength)
+        + "\nSurface area: (tbd)";
+
+};
+
 MapViewer.prototype.setCaption = function(s) {
     this.caption.innerText = s;
     this.caption.innerHTML = this.caption.innerHTML.replace(/<br>(.*)/, "<br><small>$1</small>");
+};
+
+MapViewer.prototype.changePanelVisibility = function (type, visible) {
+    this.panels.changePanelVisibility(type, visible);
+    this.updateMetrics();
 };
 
 MapViewer.prototype.filterPanels = function(re) {
     this.panels.all().forEach(function(panel) {
         panel.setVisibility(re.test(panel.longName));
     });
+    this.updateMetrics();
 };
 
 MapViewer.prototype.toggleToolsVisibility = function() {

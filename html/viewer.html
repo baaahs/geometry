@@ -411,22 +411,22 @@
 
         var mouseDownOnCaption = false;
         document.getElementById('show-panels-front').addEventListener('change', function (e) {
-          mapViewer.panels.changePanelVisibility('F', e.target.checked)
+          mapViewer.changePanelVisibility('F', e.target.checked);
         });
         document.getElementById('show-panels-rear').addEventListener('change', function (e) {
-          mapViewer.panels.changePanelVisibility('R', e.target.checked)
+          mapViewer.changePanelVisibility('R', e.target.checked);
         });
         document.getElementById('show-panels-side').addEventListener('change', function (e) {
-          mapViewer.panels.changePanelVisibility('S', e.target.checked)
+          mapViewer.changePanelVisibility('S', e.target.checked);
         });
         document.getElementById('show-panels-party').addEventListener('change', function (e) {
-          mapViewer.panels.changePanelVisibility('D', e.target.checked)
+          mapViewer.changePanelVisibility('D', e.target.checked);
         });
         document.getElementById('show-panels-business').addEventListener('change', function (e) {
-          mapViewer.panels.changePanelVisibility('P', e.target.checked)
+          mapViewer.changePanelVisibility('P', e.target.checked);
         });
         document.getElementById('flip-panels').addEventListener('change', function (e) {
-          mapViewer.panels.flipPanels(e.target.checked)
+          mapViewer.flipPanels(e.target.checked);
         });
         document.getElementById('caption-input').addEventListener('keyup', function (e) {
           mapViewer.setCaption(e.target.value);

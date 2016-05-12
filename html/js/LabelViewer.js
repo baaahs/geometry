@@ -109,7 +109,7 @@ function Label(edge) {
     logo.style.transform = 'rotate(' + angle + 'deg)';
     this.dom.appendChild(logo);
 
-    var edgeLength = edge.lengthImperial();
+    var edgeLength = MeasurementUtils.toPrettyFeetAndInches(edge.length());
     var edgeLengthDiv = this.createDiv('edge-length', "⇤ " + edgeLength + " ⇥");
     if (isUpsideDownsy) {
         // make text be printed right-side-up…

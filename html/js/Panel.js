@@ -65,6 +65,10 @@ Panel.prototype.setVisibility = function (visible) {
     this.label.classList.toggle('invisible', !visible);
 };
 
+Panel.prototype.isVisible = function () {
+    return this.mesh.visible;
+};
+
 Panel.prototype.flip = function (inverted) {
     this.geometry.faces.forEach(function (face) {
         var verts = [face.a, face.b, face.c];
@@ -149,22 +153,22 @@ Panel.prototype.positionLabel = function (mapViewer) {
     //boxMax = new THREE.Vector2(boxMax.x, boxMax.y);
     //var boxSize = Math.sqrt(boxMax.distanceToSquared(boxMin));
 
-    if (this.name == '7D') {
-        document.getElementById('panel-misc-info-1').innerText =
-            'topleft: ' + boxMin.x.toFixed(4) + ", " + boxMin.y.toFixed(4) + " " +
-            'botrght: ' + boxMax.x.toFixed(4) + ", " + boxMax.y.toFixed(4) + " " +
-            'dist: ' + boxSize;
-    } else if (this.name == 'F3P') {
-        document.getElementById('hrule').style.top = parseInt(boxMin.y) + 'px';
-        document.getElementById('vrule').style.left = parseInt(boxMin.x) + 'px';
-        document.getElementById('hrule2').style.top = parseInt(boxMax.y) + 'px';
-        document.getElementById('vrule2').style.left = parseInt(boxMax.x) + 'px';
-
-        document.getElementById('panel-misc-info-2').innerText =
-            'topleft: ' + boxMin.x.toFixed(4) + ", " + boxMin.y.toFixed(4) + " " +
-            'botrght: ' + boxMax.x.toFixed(4) + ", " + boxMax.y.toFixed(4) + " " +
-            'dist: ' + boxSize;
-    }
+    // if (this.name == '7D') {
+    //     document.getElementById('panel-misc-info-1').innerText =
+    //         'topleft: ' + boxMin.x.toFixed(4) + ", " + boxMin.y.toFixed(4) + " " +
+    //         'botrght: ' + boxMax.x.toFixed(4) + ", " + boxMax.y.toFixed(4) + " " +
+    //         'dist: ' + boxSize;
+    // } else if (this.name == 'F3P') {
+    //     document.getElementById('hrule').style.top = parseInt(boxMin.y) + 'px';
+    //     document.getElementById('vrule').style.left = parseInt(boxMin.x) + 'px';
+    //     document.getElementById('hrule2').style.top = parseInt(boxMax.y) + 'px';
+    //     document.getElementById('vrule2').style.left = parseInt(boxMax.x) + 'px';
+    //
+    //     document.getElementById('panel-misc-info-2').innerText =
+    //         'topleft: ' + boxMin.x.toFixed(4) + ", " + boxMin.y.toFixed(4) + " " +
+    //         'botrght: ' + boxMax.x.toFixed(4) + ", " + boxMax.y.toFixed(4) + " " +
+    //         'dist: ' + boxSize;
+    // }
 
     var fontSize = (boxSize / 12).toFixed();
     //fontSize = Math.min(fontSize, 36);
@@ -205,6 +209,18 @@ Panel.prototype.positionLabel = function (mapViewer) {
 
 Panel.prototype.edges = function () {
     return this.outerEdges;
+};
+
+Panel.prototype.edgesLinearLength = function () {
+    var len = 0;
+    this.outerEdges.forEach(function(edge) {
+        len += edge.length();
+    });
+    return len;
+};
+
+Panel.prototype.surfaceArea = function () {
+    return 0;
 };
 
 Panel.prototype.flattened = function() {
@@ -340,8 +356,8 @@ Edge.prototype.length = function () {
     return this.v1.distanceTo(this.v2);
 };
 
-Edge.prototype.lengthImperial = function () {
-    var length = this.length() + 0.0;
+MeasurementUtils = {};
+MeasurementUtils.toPrettyFeetAndInches = function(length) {
     var feet = Math.floor(length / 12);
     var inches = Math.floor(length % 12);
     var fractionalInches = length % 12 - inches;

@@ -64,7 +64,7 @@ describe("Panels", function () {
             it("calculates length edge", function () {
                 var edges = panelFixture['6D'].edges(panels);
                 expect(edges.map(function (edge) {
-                    return edge.otherPanel.name + " @ " + edge.lengthImperial();
+                    return edge.otherPanel.name + " @ " + MeasurementUtils.toPrettyFeetAndInches(edge.length());
                 })).toEqual(["5D @ 7'5\"", "7D @ 3'2\"", "12D @ 5'9\""]);
             });
 

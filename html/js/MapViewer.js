@@ -111,7 +111,7 @@ MapViewer.prototype.updateMetrics = function() {
     });
     document.getElementById('panel-misc-info-1').innerText = "Edges linear length: "
         + MeasurementUtils.toPrettyFeetAndInches(edgesLinearLength)
-        + "\nSurface area: (tbd)";
+        + "(WRONG!!!)\nSurface area: (tbd)";
 
 };
 

@@ -498,7 +498,9 @@
       }
       packingViewer.startRendering();
     } else {
-      packingViewer.stopRendering();
+      if (packingViewer != null) {
+        packingViewer.stopRendering();
+      }
     }
 
     tabs.forEach(function (tabEl) {

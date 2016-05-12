@@ -159,7 +159,6 @@ Panels.prototype.inventory = function (panel) {
             var toV = this.allVertices.getById(segment[1]);
             sum += (toV.x - fromV.x) * (toV.y - fromV.y);
         }.bind(this));
-        console.log(panel.name, sum);
 
         var clockwise = sum > 0;
         if (clockwise) {

@@ -216,6 +216,8 @@ Panel.prototype.edgesLinearLength = function () {
     this.outerEdges.forEach(function(edge) {
         len += edge.length();
     });
+    console.log(this.name, this.outerEdges.map(function(edge) { return MeasurementUtils.toPrettyFeetAndInches(edge.length()) }),
+        "=", MeasurementUtils.toPrettyFeetAndInches(len));
     return len;
 };
 
@@ -361,7 +363,9 @@ MeasurementUtils.toPrettyFeetAndInches = function(length) {
     var feet = Math.floor(length / 12);
     var inches = Math.floor(length % 12);
     var fractionalInches = length % 12 - inches;
-    if (fractionalInches < .25 / 2) {
+    if (fractionalInches < .25 / 4) {
+        fractionalInches = "";
+    } else if (fractionalInches > .25 / 4 && fractionalInches < .25 / 2) {
         fractionalInches = "¼";
     } else if (fractionalInches < .5 / 2) {
         fractionalInches = "½";

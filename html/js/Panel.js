@@ -226,7 +226,7 @@ Panel.prototype.surfaceArea = function () {
 };
 
 Panel.prototype.orderedOutlineSegments = function (segmentsByKey, allVertices) {
-    var localVertexIds = this.geometry.vertices.map(function (vertex) {
+    var modelVertexIds = this.geometry.vertices.map(function (vertex) {
         var globalVertex = vertex.clone().add(this.mesh.position);
         return allVertices.idFor(globalVertex);
     }.bind(this));
@@ -241,11 +241,11 @@ Panel.prototype.orderedOutlineSegments = function (segmentsByKey, allVertices) {
 
     function check(v1, v2) {
         // key has vertices re-ordered, so edges have unknown directionality
-        var segmentKey = localVertexIds[v1] + "," + localVertexIds[v2];
-        var segmentKeyAlt = localVertexIds[v2] + "," + localVertexIds[v1];
+        var segmentKey = modelVertexIds[v1] + "," + modelVertexIds[v2];
+        var segmentKeyAlt = modelVertexIds[v2] + "," + modelVertexIds[v1];
 
-        segmentsByKey[segmentKey] = [localVertexIds[v1], localVertexIds[v2]];
-        segmentsByKey[segmentKeyAlt] = [localVertexIds[v2], localVertexIds[v1]];
+        segmentsByKey[segmentKey] = [modelVertexIds[v1], modelVertexIds[v2]];
+        segmentsByKey[segmentKeyAlt] = [modelVertexIds[v2], modelVertexIds[v1]];
         if (seenSegments[segmentKey] || seenSegments[segmentKeyAlt]) {
             var i = outlineSegments.indexOf(segmentKey);
             if (i != -1) outlineSegments.splice(i, 1);
@@ -283,20 +283,16 @@ Panel.prototype.orderedOutlineSegments = function (segmentsByKey, allVertices) {
     var orderedOutlineSegments = [];
     if (outlineSegments.length > 0) {
         var startVid = outlineSegments[0].split(",")[0];
+        var lastVid = null;
         for (var i = 0; i < outlineSegments.length; i++) {
             var dests = segmentMap[startVid];
             if (!dests) {
                 console.log("huh? discontinuity for " + this.name + " at " + startVid);
                 break;
             }
-            var nextVid;
-            if (segmentMap[dests[0]]) {
-                nextVid = segmentMap[startVid][0];
-            } else {
-                nextVid = segmentMap[startVid][1];
-            }
+            var nextVid = dests[0] == lastVid ? segmentMap[startVid][1] : segmentMap[startVid][0];
             orderedOutlineSegments.push([startVid, nextVid]);
-            delete segmentMap[startVid];
+            lastVid = startVid;
             startVid = nextVid;
         }
 
@@ -482,3 +478,9 @@ MeasurementUtils.toPrettyFeetAndInches = function(length) {
 
     return (feet > 0 ? feet + "'" : '') + inchesWithFraction + '"';
 };
+
+// THREE.Vector3.prototype.toString = function() {
+//     return "Vector3[" + MeasurementUtils.toPrettyFeetAndInches(this.x) + ", " +
+//         MeasurementUtils.toPrettyFeetAndInches(this.y) + ", " +
+//         MeasurementUtils.toPrettyFeetAndInches(this.z) + "]";
+// };

@@ -52,7 +52,7 @@ describe("Panels", function () {
                 ]);
 
                 expect(edges.map(function (edge) {
-                    return edge.otherPanel.name + " @ " + edge.angle().toFixed(0) + "°";
+                    return edge.otherPanel ? edge.otherPanel.name + " @ " + edge.angle().toFixed(0) + "°" : "N/A";
                 })).toEqual(['2D @ 94°', '8D @ -15°', '13D @ -136°', '6D @ 168°']);
             });
 
@@ -81,7 +81,7 @@ describe("Panels", function () {
                 ]);
 
                 expect(edges.map(function (edge) {
-                    return edge.otherPanel.name + " @ " + edge.angle().toFixed(0) + "°";
+                    return edge.otherPanel ? edge.otherPanel.name + " @ " + edge.angle().toFixed(0) + "°" : "N/A";
                 })).toEqual(['5D @ 123°', '7D @ -12°', '12D @ -85°']);
             });
         });

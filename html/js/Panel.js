@@ -491,6 +491,10 @@ MeasurementUtils.toPrettyFeetAndInches = function(length) {
         inches++;
     }
 
+    if (inches == 12) {
+        inches = 0;
+        feet++;
+    }
     var inchesWithFraction = inches + fractionalInches;
 
     return (feet > 0 ? feet + "'" : '') + inchesWithFraction + '"';

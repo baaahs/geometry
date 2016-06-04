@@ -426,34 +426,51 @@ Panel.prototype.flattened = function() {
     return flatGeometry;
 };
 
-function Edge(panel, v1, v2, allPanels) {
+function Edge(panel, v1, v2, panelsByEdge, edgeKey) {
     this.panel = panel;
     this.v1 = v1;
     this.v2 = v2;
 
-    if (allPanels.length == 2) {
-        if (allPanels[0].name == panel.name) {
-            this.otherPanel = allPanels[1];
-        } else {
-            this.otherPanel = allPanels[0];
+    Object.defineProperty(this, "otherPanel", {
+        get: function() {
+            var allPanels = panelsByEdge[edgeKey];
+            if (allPanels.length == 2) {
+                return allPanels[0].name == panel.name ? allPanels[1] : allPanels[0];
+            }
+            return null;
         }
-    }
+    });
 }
 
 Edge.prototype.angle = function () {
-    var quaternion = new THREE.Quaternion();
-    quaternion.setFromUnitVectors(this.panel.normal, new THREE.Vector3(0, 0, 1));
-    quaternion.x = 0; // never rotate around the x axis or some angles (F10P, F11) come out wonky…
+    if (this.computedAngle_ === undefined) {
+        var quaternion = new THREE.Quaternion();
+        quaternion.setFromUnitVectors(this.panel.normal, new THREE.Vector3(0, 0, 1));
+        quaternion.x = 0; // never rotate around the x axis or some angles (F10P, F11) come out wonky…
 
-    var v1 = this.v1.clone().applyQuaternion(quaternion);
-    var v2 = this.v2.clone().applyQuaternion(quaternion);
+        var v1 = this.v1.clone().applyQuaternion(quaternion);
+        var v2 = this.v2.clone().applyQuaternion(quaternion);
 
-    var vector = v1.clone().sub(v2);
-    return Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+        var vector = v1.clone().sub(v2);
+        this.computedAngle_ = Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+    }
+
+    return this.computedAngle_;
 };
 
 Edge.prototype.length = function () {
     return this.v1.distanceTo(this.v2);
+};
+
+Edge.prototype.compoundLength = function () {
+    var computedLength = 0;
+    var myAngle = this.angle();
+    this.panel.edges().forEach(function (otherEdge) {
+        if (Math.abs(otherEdge.angle() - myAngle) < 5) {
+            computedLength += otherEdge.length();
+        }
+    });
+    return computedLength;
 };
 
 MeasurementUtils = {};

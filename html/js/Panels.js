@@ -122,7 +122,7 @@ Panels.prototype.inventory = function (panel) {
         var segmentIds = segmentKey.split(",");
         var v1 = this.allVertices.getById(segmentIds[0]).clone();
         var v2 = this.allVertices.getById(segmentIds[1]).clone();
-        return new Edge(panel, v1, v2, this.panelsByEdge[segmentIds.sort().join(",")]);
+        return new Edge(panel, v1, v2, this.panelsByEdge, segmentIds.sort().join(","));
     }.bind(this));
 };
 

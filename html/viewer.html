@@ -113,13 +113,15 @@
     /* LabelViewer stuff starts here */
     #label-render-container {
       margin-top: 2em;
+      width: 8.3in;
     }
 
     .label {
       width: 4in;
-      height: 1.25in;
+      height: 1.333in;
       border: 1px solid black;
-      margin: 0.1cm;
+      margin-left: .0625in;
+      margin-right: .0625in;
       position: relative;
       display: inline-flex;
       flex-direction: row;
@@ -127,6 +129,16 @@
       align-items: center;
       font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
       overflow: hidden;
+    }
+
+    .label .fold-line {
+      position: absolute;
+      width: 4in;
+      height: 1in;
+      border-top: 1px dashed black;
+      top: .333in;
+      left: 0;
+      right: 0;
     }
 
     .label.hidden, .label.invisible {
@@ -143,15 +155,24 @@
       white-space: pre;
     }
 
-    .label .name {
+    .label.flipped {
+      transform: rotate(180deg);
+    }
+
+    .label > .name {
+      position: absolute;
       text-align: center;
       width: auto;
       font-size: 60pt;
       font-weight: bold;
       letter-spacing: -0.1em;
-      flex: 3;
-      line-height: 60%;
-      padding-top: 9pt;
+      line-height: 55%;
+      left: 1in;
+      top: .4in;
+    }
+
+    .label.flipped > .name {
+      top: .3in;
     }
 
     .label .name .side {
@@ -169,9 +190,10 @@
     .label .other {
       position: absolute;
       left: .25em;
-      top: 1.25em;
+      bottom: .25em;
       font-size: 30pt;
       font-weight: normal;
+      transform: scaleX(.8);
       letter-spacing: -0.1em;
       padding: 0 .2em;
       border: 1px solid black;
@@ -184,7 +206,8 @@
 
     .label .other-arrow {
       position: absolute;
-      left: .5cm;
+      left: .15em;
+      top: .25in;
       font-size: 24pt;
       font-weight: bold;
       letter-spacing: -0.1em;
@@ -210,7 +233,7 @@
     .label .up {
       position: absolute;
       right: 0.5cm;
-      top: 0;
+      top: .333in;
       font-size: 48pt;
       font-weight: normal;
     }
@@ -245,7 +268,7 @@
     .label .edge-length {
       position: absolute;
       right: 4em;
-      bottom: 0;
+      top: 0;
       z-index: -1;
     }
 
@@ -259,7 +282,7 @@
       width: 3.5em;
       height: 3.5em;
       right: 4.5em;
-      top: .5em;
+      bottom: .75em;
       z-index: -1;
     }
 
@@ -267,7 +290,7 @@
       width: 2em;
       height: 2em;
       right: 5.25em;
-      top: 1.25em;
+      bottom: 1.5em;
       z-index: -1;
     }
 
@@ -370,6 +393,7 @@
 <div id="labels-tab" class="tab">
   <div id="labels-controls" class="no-print">
     <form>
+      <span id="label-count"></span>
       <input type="checkbox" id="labels-multiple" checked/>
       <label for="labels-periodicity">Label every: </label><input type="text" id="labels-periodicity" value="4"/> feet
       &nbsp; &nbsp;

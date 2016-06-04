@@ -29,6 +29,7 @@ describe("Panels", function () {
             panelFixture['13D'] = buildFixturePanel('13D', [[109, 163, 140], [76, 127, 152], [109, 95, 152]], [[0, 1, 2]]);
             panelFixture['9D'] = buildFixturePanel('9D', [[109, 95, 152], [56, 26, 140], [87, 22, 128]], [[0, 1, 2]]);
             panelFixture['15D'] = buildFixturePanel('15D', [[158, 138, 140], [109, 163, 140], [156, 111, 152], [158, 138, 140], [122, 177, 116], [109, 163, 140]], [[0, 1, 2], [3, 4, 5]]);
+            panelFixture['21D'] = buildFixturePanel('21D', [[12, 9, 0], [15, 5, 0], [17, 7, 1], [19, 9, 2], [21, 11, 3]], [[0, 1, 2], [0, 2, 3], [0, 3, 4]]);
         });
 
         describe("edge calculation", function () {
@@ -45,15 +46,15 @@ describe("Panels", function () {
                 });
 
                 expect(vertices).toEqual([
-                    [[39, 119, 152], [36, 75, 152]],
-                    [[36, 75, 152], [109, 95, 152]],
-                    [[109, 95, 152], [76, 127, 152]],
-                    [[76, 127, 152], [39, 119, 152]]
+                    [[39, 119, 152], [76, 127, 152]],
+                    [[76, 127, 152], [109, 95, 152]],
+                    [[109, 95, 152], [36, 75, 152]],
+                    [[36, 75, 152], [39, 119, 152]]
                 ]);
 
                 expect(edges.map(function (edge) {
                     return edge.otherPanel ? edge.otherPanel.name + " @ " + edge.angle().toFixed(0) + "°" : "N/A";
-                })).toEqual(['2D @ 94°', '8D @ -15°', '13D @ -136°', '6D @ 168°']);
+                })).toEqual(['6D @ -12°', '13D @ 44°', '8D @ 165°', '2D @ -86°']);
             });
 
             it("calculates neighboring panel for each edge", function () {
@@ -65,7 +66,7 @@ describe("Panels", function () {
                 var edges = panelFixture['6D'].edges(panels);
                 expect(edges.map(function (edge) {
                     return edge.otherPanel.name + " @ " + MeasurementUtils.toPrettyFeetAndInches(edge.length());
-                })).toEqual(["5D @ 7'5\"", "7D @ 3'2\"", "12D @ 5'9\""]);
+                })).toEqual(["12D @ 5'9\"", "7D @ 3'2\"", "5D @ 7'5\""]);
             });
 
             it("calculates panel outer edges for 6D", function () {
@@ -75,14 +76,36 @@ describe("Panels", function () {
                 });
 
                 expect(vertices).toEqual([
-                    [[86, 185, 116], [39, 119, 152]],
-                    [[39, 119, 152], [76, 127, 152]],
-                    [[76, 127, 152], [86, 185, 116]]
+                    [[86, 185, 116], [76, 127, 152]],
+                    [[76, 127, 152], [39, 119, 152]],
+                    [[39, 119, 152], [86, 185, 116]]
                 ]);
 
                 expect(edges.map(function (edge) {
                     return edge.otherPanel ? edge.otherPanel.name + " @ " + edge.angle().toFixed(0) + "°" : "N/A";
-                })).toEqual(['5D @ 123°', '7D @ -12°', '12D @ -85°']);
+                })).toEqual(['12D @ 95°', '7D @ 168°', '5D @ -57°']);
+            });
+
+            it("calculates compound edge length for 21D", function () {
+                var edges = panelFixture['21D'].edges(panels);
+                var vertices = edges.map(function (edge) {
+                    return [[edge.v1.x, edge.v1.y, edge.v1.z], [edge.v2.x, edge.v2.y, edge.v2.z]];
+                });
+
+                expect(vertices).toEqual([
+                    [[86, 185, 116], [76, 127, 152]],
+                    [[76, 127, 152], [39, 119, 152]],
+                    [[39, 119, 152], [86, 185, 116]]
+                ]);
+
+                expect(edges.map(function (edge) {
+                    return MeasurementUtils.toPrettyFeetAndInches(edge.length()) + " @ " + edge.angle().toFixed(0) + "°";
+                })).toEqual(['12D @ 95°', '7D @ 168°', '5D @ -57°']);
+
+                expect(edges.map(function (edge) {
+                    return "edge " + MeasurementUtils.toPrettyFeetAndInches(edge.length())
+                        + " compound " + MeasurementUtils.toPrettyFeetAndInches(edge.compoundLength());
+                })).toEqual(['12D @ 95°', '7D @ 168°', '5D @ -57°']);
             });
         });
     }

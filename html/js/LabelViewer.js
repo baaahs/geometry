@@ -23,6 +23,7 @@ LabelViewer.prototype.draw = function () {
         }.bind(this));
         //}
     }.bind(this));
+    this.countLabels();
 };
 
 LabelViewer.prototype.filterLabels = function(re) {
@@ -30,6 +31,7 @@ LabelViewer.prototype.filterLabels = function(re) {
         var matchesPanel = re.test(label.panel.name);
         label.dom.classList.toggle('invisible', !matchesPanel);
     });
+    this.countLabels();
 };
 
 LabelViewer.prototype.labelsEvery = function(distance) {
@@ -37,12 +39,23 @@ LabelViewer.prototype.labelsEvery = function(distance) {
     this.draw();
 };
 
+LabelViewer.prototype.countLabels = function(distance) {
+    var count = 0;
+    var children = this.container.children;
+    for (var i = 0; i < children.length; i++) {
+        if (!children[i].classList.contains("invisible")) count++;
+    }
+    
+    document.getElementById("label-count").innerText = count == 0 ? "No labels" : count + " labels";
+};
+
 function Label(edge) {
     this.edge = edge;
     this.panel = edge.panel;
     var angle = edge.angle();
 
-    var upperEdge = false;
+    var derotate = false;
+    var upperEdge = true;
 
     this.dom = this.createDiv('label');
 
@@ -53,11 +66,13 @@ function Label(edge) {
     //this.dom.appendChild(borderLeft);
 
     var nameDiv = this.createDiv('name');
-    var re = this.panel.name.match(/^(.+?)([DP]?)$/);
+    var re = this.panel.name.match(/^([FR]?)(.+?)([DP]?)$/);
     var nameClass = 'name' + this.panel.name.length;
-    var side = re[2];
+    var frontOrRear = re[1];
+    var panelNumber = re[2];
+    var side = re[3];
     this.dom.classList.add('side-' + side.toLowerCase());
-    nameDiv.innerHTML = '<div class="name ' + nameClass + '">' + re[1] + '<span class="side">' + side + '</span></div>';
+    nameDiv.innerHTML = '<div class="name ' + nameClass + '"><span class="side">' + frontOrRear + '</span>' + panelNumber + '<span class="side">' + side + '</span></div>';
     if (this.panel.info) {
         var sectionClass = 'section';
         if (this.panel.info.section.length > 10) {
@@ -72,11 +87,11 @@ function Label(edge) {
 
     // show label rotated:
     var isUpsideDownsy = angle > 90 || angle < -90;
-    if (false) {
+    if (derotate) {
         this.dom.style.transform = 'rotate(' + (0 - angle) + 'deg)';
     } else if (isUpsideDownsy) {
         // make text be printed right-side-up…
-        this.dom.style.transform = 'rotate(180deg)';
+        this.dom.classList.add('flipped');
     }
 
     if (edge.otherPanel && edge.otherPanel.isPanel()) {
@@ -109,7 +124,7 @@ function Label(edge) {
     logo.style.transform = 'rotate(' + angle + 'deg)';
     this.dom.appendChild(logo);
 
-    var edgeLength = MeasurementUtils.toPrettyFeetAndInches(edge.length());
+    var edgeLength = MeasurementUtils.toPrettyFeetAndInches(edge.compoundLength());
     var edgeLengthDiv = this.createDiv('edge-length', "⇤ " + edgeLength + " ⇥");
     if (isUpsideDownsy) {
         // make text be printed right-side-up…
@@ -125,6 +140,8 @@ function Label(edge) {
     innerCircle.classList.add('inner');
     innerCircle.style.backgroundColor = '#' + this.panel.color.getHexString();
     this.dom.appendChild(innerCircle);
+    
+    this.dom.appendChild(this.createDiv('fold-line'));
 }
 
 Label.prototype.createDiv = function (clazz, innerText) {

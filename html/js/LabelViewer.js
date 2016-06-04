@@ -59,11 +59,20 @@ function Label(edge) {
 
     this.dom = this.createDiv('label');
 
-    //var borderLeft = this.createDiv('label-border-left');
-    //borderLeft.innerText = "x: 14'4 1/2\"\n" +
-    //    "y:  7'11 3/8\"\n" +
-    //    "z:  4' 3 1/3\"";
-    //this.dom.appendChild(borderLeft);
+    function vertexPositionNice(length) {
+        var str = MeasurementUtils.toPrettyFeetAndInches(length);
+        return str.indexOf("'") == 1 ? " " + str : str;
+    }
+
+    function vertexPosition(vertex) {
+        vertex = vertex || edge.v1;
+        return "x: " + vertexPositionNice(vertex.x) + "\n" +
+            "y: " + vertexPositionNice(vertex.y) + "\n" +
+            "z: " + vertexPositionNice(vertex.z);
+    }
+
+    this.dom.appendChild(this.createDiv('label-vertex left', vertexPosition(edge.v1)));
+    this.dom.appendChild(this.createDiv('label-vertex right', vertexPosition(edge.v2)));
 
     var nameDiv = this.createDiv('name');
     var re = this.panel.name.match(/^([FR]?)(.+?)([DP]?)$/);
@@ -146,7 +155,7 @@ function Label(edge) {
 
 Label.prototype.createDiv = function (clazz, innerText) {
     var div = document.createElement('div');
-    div.classList.add(clazz);
+    clazz.split(" ").forEach(function (className) { div.classList.add(className); });
     if (innerText != null) {
         div.innerText = innerText;
     }

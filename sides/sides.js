@@ -166,15 +166,28 @@ packing.split("\n").forEach(function( line ) {
 
 panels.forEach(function(panel) {
 	var sides = [];
+	var ft = [];
 
 	var pts = panel.pts;
 	for (var ix = 0; ix<pts.length-1; ix++) {
 		var distance = Math.sqrt( Math.pow(pts[ix][0] - pts[ix+1][0], 2) +
-			 Math.pow(pts[ix][0] - pts[ix+1][0], 2) )
+			 Math.pow(pts[ix][1] - pts[ix+1][1], 2) )
 		sides.push(distance);
+
+		var feet = Math.floor(distance / 12.0);
+		var inches = Math.round(distance - (feet * 12.0));
+		if (inches == 12.0) {
+			feet += 1.0;
+			inches = 0;
+		}
+
+		ft.push(feet+"' "+inches+"\"");
 	}
 
 	panel.sides = sides;
+	panel.ft = ft;
+
+
 
 	// console.log(panel.name, util.inspect(panel.sides));
 })

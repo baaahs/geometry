@@ -475,6 +475,8 @@ Edge.prototype.compoundLength = function () {
 
 MeasurementUtils = {};
 MeasurementUtils.toPrettyFeetAndInches = function(length) {
+    var negative = length < 0;
+    length = Math.abs(length);
     var feet = Math.floor(length / 12);
     var inches = Math.floor(length % 12);
     var fractionalInches = length % 12 - inches;
@@ -497,7 +499,7 @@ MeasurementUtils.toPrettyFeetAndInches = function(length) {
     }
     var inchesWithFraction = inches + fractionalInches;
 
-    return (feet > 0 ? feet + "'" : '') + inchesWithFraction + '"';
+    return (negative ? "-" : "") + (feet > 0 ? feet + "'" : '') + inchesWithFraction + '"';
 };
 
 // THREE.Vector3.prototype.toString = function() {

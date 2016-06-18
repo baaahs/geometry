@@ -114,31 +114,69 @@
     #label-render-container {
       margin-top: 2em;
       width: 8.3in;
+      display: table;
+    }
+
+    #label-render-container > tr {
+      page-break-before: auto;
+      page-break-inside: avoid;
+    }
+
+    .column-spacer {
+      width: .1875in;
+    }
+
+    @media print {
+      @page {
+        margin-top: .875in;
+        margin-bottom: .875in;
+      }
+
+      #label-render-container {
+        margin-top: 0;
+        margin-left: 0.025in;
+        margin-right: 0.025in;
+        /*width: 8.3in;*/
+      }
     }
 
     .label {
-      width: 4in;
-      height: 1.333in;
-      border: 1px solid black;
-      margin-left: .0625in;
-      margin-right: .0625in;
+      /*width: 4.3389in;  !* 3 11/16 *!*/
+      /*height: 1.42222in;  !* 1 1/4 *!*/
+      width: 4in;  /* 3 11/16 */
+      height: 1.333in;  /* 1 1/4 */
+      /*margin-left: .0625in;*/
+      /*margin-right: .0625in;*/
       position: relative;
       display: inline-flex;
-      flex-direction: row;
-      justify-content: center;
-      align-items: center;
+      /*flex-direction: row;*/
+      /*justify-content: center;*/
+      /*align-items: center;*/
       font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
       overflow: hidden;
     }
 
+    .label .outline {
+      width: 100%;
+      height: 100%;
+      border-top: 1px solid grey;
+      border-bottom: 1px solid grey;
+      z-index: -100;
+    }
+
+    tr > .label {
+      display: table-cell;
+    }
+
     .label .fold-line {
       position: absolute;
-      width: 4in;
+      width: 100%;
       height: 1in;
-      border-top: 1px dashed black;
+      border-top: 1px dotted grey;
       top: .333in;
       left: 0;
       right: 0;
+      z-index: -100;
     }
 
     .label.hidden, .label.invisible {
@@ -154,6 +192,10 @@
       font-weight: bold;
       line-height: 100%;
       white-space: pre;
+    }
+
+    .flipped .label-vertex {
+      transform: rotate(180deg);
     }
 
     .label-vertex.left {
@@ -206,6 +248,16 @@
       letter-spacing: -0.1em;
       padding: 0 .2em;
       border: 1px solid black;
+    }
+
+    #print-instructions {
+      position: absolute;
+      right: 2em;
+      top: 5em;
+      width: 30%;
+      heigth: 60%;
+      background-color: cornflowerblue;
+      padding: 1em;
     }
 
     .label .other.lower {
@@ -414,6 +466,18 @@
     </form>
   </div>
   <div id="label-render-container"></div>
+
+  <div id="print-instructions" class="no-print">
+    <h2>To print:</h2>
+    <ul>
+      <li>⌘P</li>
+      <li>Color: Color</li>
+      <li>Margins: Top=0.88", others=0</li>
+      <li>Options: ✓ Background graphics</li>
+      <li>Open PDF in Preview</li>
+      <li></li>
+    </ul>
+  </div>
 </div>
 
 <div id="packing-tab" class="tab">
@@ -502,23 +566,23 @@
       if (labelViewer == null) {
         labelViewer = new LabelViewer(panels, document.getElementById('label-render-container'));
 
-        document.getElementById('labels-filter').addEventListener('keyup', function(e) {
-          labelViewer.filterLabels(new RegExp(e.target.value));
-        });
-
-        var labelPeriodicity = document.getElementById('labels-periodicity');
-        var labelMultiple = document.getElementById('labels-multiple');
+        function filterLabels() {
+          labelViewer.filterLabels(new RegExp(labelsFilter.value));
+        }
 
         function multiLabels() {
           labelViewer.labelsEvery(labelMultiple.checked ? parseFloat(labelPeriodicity.value) * 12 : 0);
+          filterLabels();
         }
 
-        labelPeriodicity.addEventListener('keyup', function(e) {
-          multiLabels();
-        });
-        labelMultiple.addEventListener('click', function(e) {
-          multiLabels();
-        });
+        var labelsFilter = document.getElementById('labels-filter');
+        var labelPeriodicity = document.getElementById('labels-periodicity');
+        var labelMultiple = document.getElementById('labels-multiple');
+
+        labelsFilter.addEventListener('keyup', function(e) { filterLabels(); });
+        labelPeriodicity.addEventListener('keyup', function(e) { multiLabels(); });
+        labelMultiple.addEventListener('click', function(e) { multiLabels(); });
+
         multiLabels();
       }
     }

@@ -3,12 +3,10 @@ function LabelViewer(panels, container) {
     this.container = container;
     this.labels = [];
     this.labelPerDistance = 0;
-
-    this.draw();
 }
 
-LabelViewer.prototype.draw = function () {
-    this.container.innerHTML = '';
+LabelViewer.prototype.generateLabels = function () {
+    this.labels = [];
     this.panels.all().forEach(function (panel) {
         //if (panel.name == '7P') {
         panel.edges().forEach(function(edge) {
@@ -18,34 +16,51 @@ LabelViewer.prototype.draw = function () {
             for (var i = 0; i < count; i++) {
                 var label = new Label(edge);
                 this.labels.push(label);
-                this.container.appendChild(label.dom);
             }
         }.bind(this));
         //}
     }.bind(this));
-    this.countLabels();
+};
+
+LabelViewer.prototype.layoutLabels = function(re) {
+    var i = 0;
+    var tr = null;
+    this.container.innerHTML = '';
+    this.labels.forEach(function(label) {
+        if (label.visible) {
+            if (i % 2 == 0) {
+                this.container.appendChild(tr = document.createElement("tr"))
+            } else {
+                var spacer = document.createElement("td");
+                spacer.classList.add("column-spacer");
+                tr.appendChild(spacer)
+            }
+            tr.appendChild(label.dom);
+            i++;
+        }
+    }.bind(this));
 };
 
 LabelViewer.prototype.filterLabels = function(re) {
     this.labels.forEach(function(label) {
-        var matchesPanel = re.test(label.panel.name);
-        label.dom.classList.toggle('invisible', !matchesPanel);
+        label.visible = re.test(label.panel.name);
     });
     this.countLabels();
+    this.layoutLabels();
 };
 
 LabelViewer.prototype.labelsEvery = function(distance) {
     this.labelPerDistance = distance;
-    this.draw();
+    this.generateLabels();
+    this.countLabels();
+    this.layoutLabels();
 };
 
 LabelViewer.prototype.countLabels = function(distance) {
     var count = 0;
-    var children = this.container.children;
-    for (var i = 0; i < children.length; i++) {
-        if (!children[i].classList.contains("invisible")) count++;
-    }
-    
+    this.labels.forEach(function (label) {
+        if (label.visible) count++;
+    });
     document.getElementById("label-count").innerText = count == 0 ? "No labels" : count + " labels";
 };
 
@@ -58,21 +73,7 @@ function Label(edge) {
     var upperEdge = true;
 
     this.dom = this.createDiv('label');
-
-    function vertexPositionNice(length) {
-        var str = MeasurementUtils.toPrettyFeetAndInches(length);
-        return str.indexOf("'") == 1 ? " " + str : str;
-    }
-
-    function vertexPosition(vertex) {
-        vertex = vertex || edge.v1;
-        return "x: " + vertexPositionNice(vertex.x) + "\n" +
-            "y: " + vertexPositionNice(vertex.y) + "\n" +
-            "z: " + vertexPositionNice(vertex.z);
-    }
-
-    this.dom.appendChild(this.createDiv('label-vertex left', vertexPosition(edge.v1)));
-    this.dom.appendChild(this.createDiv('label-vertex right', vertexPosition(edge.v2)));
+    this.isVisible_ = true;
 
     var nameDiv = this.createDiv('name');
     var re = this.panel.name.match(/^([FR]?)(.+?)([DP]?)$/);
@@ -141,6 +142,27 @@ function Label(edge) {
     }
     this.dom.appendChild(edgeLengthDiv);
 
+    function vertexPositionNice(length) {
+        var str = MeasurementUtils.toPrettyFeetAndInches(length);
+        return str.indexOf("'") == 1 ? " " + str : str;
+    }
+
+    // sheep model is off center, sorry
+    var globalOffset = new THREE.Vector3(0, 0, -90.5);
+
+    function vertexPosition(vertex) {
+        var loc = edge.panel.mesh.position.clone();
+        loc.add(vertex);
+        loc.add(globalOffset);
+        if (edge.panel.name == "R1") console.log(edge.panel.name, vertex.z, "+", edge.panel.mesh.position.z, "=", loc.z);
+        return "x: " + vertexPositionNice(loc.x) + "\n" +
+            "y: " + vertexPositionNice(loc.y) + "\n" +
+            "z: " + vertexPositionNice(loc.z);
+    }
+
+    this.dom.appendChild(this.createDiv('label-vertex right', vertexPosition(edge.v1)));
+    this.dom.appendChild(this.createDiv('label-vertex left', vertexPosition(edge.v2)));
+
     var outerCircle = this.createDiv('circle');
     outerCircle.classList.add('outer');
     this.dom.appendChild(outerCircle);
@@ -151,6 +173,7 @@ function Label(edge) {
     this.dom.appendChild(innerCircle);
     
     this.dom.appendChild(this.createDiv('fold-line'));
+    this.dom.appendChild(this.createDiv('outline'));
 }
 
 Label.prototype.createDiv = function (clazz, innerText) {
@@ -161,3 +184,14 @@ Label.prototype.createDiv = function (clazz, innerText) {
     }
     return div;
 };
+
+Object.defineProperty(Label.prototype, "visible", {
+    get: function() {
+        return this.isVisible_;
+    },
+
+    set: function(isVisible) {
+        this.isVisible_ = isVisible;
+        this.dom.classList.toggle('invisible', !isVisible);
+    }
+});

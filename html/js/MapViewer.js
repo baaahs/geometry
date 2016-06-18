@@ -213,3 +213,7 @@ MapViewer.prototype.toScreenPosition = function (vector) {
 
     return {x: vector.x, y: vector.y};
 };
+
+MapViewer.prototype.flipPanels = function (inverted) {
+    this.panels.flipPanels(inverted);
+};

@@ -455,7 +455,7 @@ Edge.prototype.angle = function () {
         this.computedAngle_ = Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
     }
 
-    return this.computedAngle_;
+    return 0 - this.computedAngle_;
 };
 
 Edge.prototype.length = function () {

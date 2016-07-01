@@ -97,6 +97,15 @@ function Label(edge) {
 
     // show label rotated:
     var isUpsideDownsy = angle > 90 || angle < -90;
+
+    // if (angle >= 180) {
+    //     angle -= 180;
+    //     isUpsideDownsy = !isUpsideDownsy;
+    // } else if (angle <= -180) {
+    //     angle += 180;
+    //     isUpsideDownsy = !isUpsideDownsy;
+    // }
+
     if (derotate) {
         this.dom.style.transform = 'rotate(' + (0 - angle) + 'deg)';
     } else if (isUpsideDownsy) {
@@ -135,7 +144,8 @@ function Label(edge) {
     this.dom.appendChild(logo);
 
     var edgeLength = MeasurementUtils.toPrettyFeetAndInches(edge.compoundLength());
-    var edgeLengthDiv = this.createDiv('edge-length', "⇤ " + edgeLength + " ⇥ • Panel " + this.panel.name + " • BAAAHS");
+    var edgeLengthDiv = this.createDiv('edge-length', "⇤ " + edgeLength + " ⇥ • Panel " + this.panel.name + " • " + angle.toFixed(0) + "°");
+    console.log(edge.panel.name, "angle: ", angle, isUpsideDownsy);
     if (isUpsideDownsy) {
         // make text be printed right-side-up…
         edgeLengthDiv.style.transform = 'rotate(180deg)';
@@ -148,13 +158,12 @@ function Label(edge) {
     }
 
     // sheep model is off center, sorry
-    var globalOffset = new THREE.Vector3(0, 0, -90.5);
+    var globalOffset = new THREE.Vector3(0, 0, -45.5);
 
     function vertexPosition(vertex) {
         var loc = edge.panel.mesh.position.clone();
         loc.add(vertex);
         loc.add(globalOffset);
-        if (edge.panel.name == "R1") console.log(edge.panel.name, vertex.z, "+", edge.panel.mesh.position.z, "=", loc.z);
         return "x: " + vertexPositionNice(loc.x) + "\n" +
             "y: " + vertexPositionNice(loc.y) + "\n" +
             "z: " + vertexPositionNice(loc.z);
@@ -171,7 +180,14 @@ function Label(edge) {
     innerCircle.classList.add('inner');
     innerCircle.style.backgroundColor = '#' + this.panel.color.getHexString();
     this.dom.appendChild(innerCircle);
-    
+
+    var qrCode = document.createElement('img');
+    qrCode.classList.add("qr-code");
+    // var url = encodeURIComponent("http://baaahs.org/a/" + edge.panel.name);
+    var url = encodeURIComponent("http://192.168.1.193:4567/a/" + edge.panel.name);
+    qrCode.setAttribute("src", "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + url);
+    this.dom.appendChild(qrCode);
+
     this.dom.appendChild(this.createDiv('fold-line'));
     this.dom.appendChild(this.createDiv('outline'));
 }

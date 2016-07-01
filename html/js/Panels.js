@@ -36,8 +36,9 @@ Panels.prototype.load = function (modelUrl, callback) {
                 // center panel on its vertices, and reposition it within the parent to compensate…
                 child.geometry.computeBoundingBox();
                 var offset = child.geometry.boundingBox.center();
-                child.geometry.translate(-offset.x, -offset.y, -offset.z);
-                child.position.add(offset);
+                // child.geometry.translate(-offset.x, -offset.y, -offset.z);
+                console.log(child.name, offset.x, offset.y, offset.z);
+                // child.position.add(offset);
 
                 var info = this.infos[child.name];
                 var panel = new Panel(child, info);
@@ -79,6 +80,7 @@ Panels.prototype.inventory = function (panel) {
     var outlineSegments = panel.orderedOutlineSegments(segmentsByKey, this.allVertices);
 
     console.log(panel.name, outlineSegments);
+    console.log(this.allVertices);
 
 //    console.log("Outline for " + panel.name + ":", outlineSegments);
 
@@ -108,6 +110,7 @@ Panels.prototype.inventory = function (panel) {
         var segmentKeyNorm = segmentsByKey[segmentKey].sort().join(",");
         normalizedOutlineSegments.push(segmentKeyNorm);
 
+        console.log(panel.name, segmentKeyNorm);
         var panelsForEdge = this.panelsByEdge[segmentKeyNorm];
         if (panelsForEdge == null) {
             panelsForEdge = [];
@@ -161,7 +164,13 @@ function Vertices() {
 Vertices.prototype.idFor = function (vertex) {
     // why is the precision off here after just addition?
     var precision = 3;
-    var vertexKey = vertex.x.toFixed(precision) + ',' + vertex.y.toFixed(precision) + ',' + vertex.z.toFixed(precision);
+    var multiplier = Math.pow(10, precision) / 4;
+
+    function fix(x) {
+        return Math.round(x * multiplier);
+    }
+
+    var vertexKey = fix(vertex.x) + ',' + fix(vertex.y) + ',' + fix(vertex.z);
     var localId = this.byKey[vertexKey];
     if (localId == null) {
         localId = this.unique.length;

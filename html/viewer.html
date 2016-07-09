@@ -582,6 +582,8 @@
     if (name == 'labels') {
       if (labelViewer == null) {
         labelViewer = new LabelViewer(panels, document.getElementById('label-render-container'));
+//        labelViewer.qrCodes(100, 500);
+//        return;
 
         function filterLabels() {
           labelViewer.filterLabels(new RegExp(labelsFilter.value));

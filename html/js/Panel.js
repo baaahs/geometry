@@ -453,9 +453,17 @@ Edge.prototype.angle = function () {
 
         var vector = v1.clone().sub(v2);
         this.computedAngle_ = Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+
+        this.computedAngle_ = 0 - this.computedAngle_;
+        if (this.computedAngle_ < 0) this.computedAngle_ += 360;
+
+        // this.computedAngle_ -= 180;
+        // if (this.computedAngle_ >= 360) this.computedAngle_ -= 360;
+        // if (this.computedAngle_ <= -360) this.computedAngle_ += 360;
+        // this.computedAngle_ = 0 - this.computedAngle_;
     }
 
-    return 0 - this.computedAngle_;
+    return this.computedAngle_;
 };
 
 Edge.prototype.length = function () {

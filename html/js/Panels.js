@@ -61,6 +61,13 @@ Panels.prototype.all = function () {
         var panel = panels[name];
         if (panel.isPanel()) all.push(panel);
     });
+    function normalizeName(panel) {
+        var re = /^([FR])?(\d+)([DP])?/.exec(panel.name);
+        return re[1] + (re[2].length == 1 ? "0" + re[2] : re[2]) + re[3];
+    }
+    all.sort(function(a, b) {
+        return normalizeName(a).localeCompare(normalizeName(b));
+    });
     return all;
 };
 

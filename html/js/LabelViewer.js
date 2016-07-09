@@ -93,10 +93,11 @@ function Label(edge) {
       nameDiv.innerHTML += '<div class="' + sectionClass + '">(' + this.panel.info.section + ')</div>';
     }
 
-    nameDiv.style.transform = 'rotate(' + angle + 'deg)';
-
     // show label rotated:
-    var isUpsideDownsy = angle > 90 || angle < -90;
+    var isUpsideDownsy = angle > 90 && angle < 270;
+    var upAngle = 0 - angle;
+
+    nameDiv.style.transform = 'rotate(' + upAngle + 'deg)';
 
     // if (angle >= 180) {
     //     angle -= 180;
@@ -117,7 +118,7 @@ function Label(edge) {
         var otherPanelName = edge.otherPanel ? edge.otherPanel.name : '';
         var otherPanelDiv = this.createDiv('other', otherPanelName);
         if (!upperEdge) otherPanelDiv.classList.add('lower');
-        otherPanelDiv.style.transform = 'rotate(' + angle + 'deg)';
+        otherPanelDiv.style.transform = 'rotate(' + upAngle + 'deg)';
         this.dom.appendChild(otherPanelDiv);
 
         var otherArrowPanelDiv = this.createDiv('other-arrow');
@@ -134,18 +135,18 @@ function Label(edge) {
 
     var upDiv = this.createDiv('up');
     upDiv.innerHTML = '↑<div class="u">U</div><div class="p">P</div>';
-    upDiv.style.transform = 'rotate(' + angle + 'deg)';
+    upDiv.style.transform = 'rotate(' + upAngle + 'deg)';
     this.dom.appendChild(upDiv);
 
     var logo = document.createElement('img');
     logo.classList.add('logo');
     logo.src = 'BAAAHS2015LogoWithBorder-320x272.png';
-    logo.style.transform = 'rotate(' + angle + 'deg)';
+    logo.style.transform = 'rotate(' + upAngle + 'deg)';
     this.dom.appendChild(logo);
 
     var edgeLength = MeasurementUtils.toPrettyFeetAndInches(edge.compoundLength());
     var edgeLengthDiv = this.createDiv('edge-length', "⇤ " + edgeLength + " ⇥ • Panel " + this.panel.name + " • " + angle.toFixed(0) + "°");
-    console.log(edge.panel.name, "angle: ", angle, isUpsideDownsy);
+    console.log(edge.panel.name, "neighbor: " + (edge.otherPanel ? edge.otherPanel.name : "none"), "angle: ", angle, isUpsideDownsy);
     if (isUpsideDownsy) {
         // make text be printed right-side-up…
         edgeLengthDiv.style.transform = 'rotate(180deg)';
@@ -183,8 +184,8 @@ function Label(edge) {
 
     var qrCode = document.createElement('img');
     qrCode.classList.add("qr-code");
-    // var url = encodeURIComponent("http://baaahs.org/a/" + edge.panel.name);
-    var url = encodeURIComponent("http://192.168.1.193:4567/a/" + edge.panel.name);
+    var url = encodeURIComponent("http://baaahs.org/a/" + edge.panel.name);
+    // var url = encodeURIComponent("http://192.168.1.150:9292/a/" + edge.panel.name);
     qrCode.setAttribute("src", "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + url);
     this.dom.appendChild(qrCode);
 

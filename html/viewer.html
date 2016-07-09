@@ -144,9 +144,10 @@
       /*width: 4.3389in;  !* 3 11/16 *!*/
       /*height: 1.42222in;  !* 1 1/4 *!*/
       width: 4in;  /* 3 11/16 */
-      height: 1.333in;  /* 1 1/4 */
+      height: 3.355cm;  /* 1 1/4 */
       /*margin-left: .0625in;*/
       /*margin-right: .0625in;*/
+      margin-bottom: 2in;
       position: relative;
       display: inline-flex;
       /*flex-direction: row;*/
@@ -166,6 +167,11 @@
 
     tr > .label {
       display: table-cell;
+      border: 1px solid black;
+    }
+
+    .label.flipped {
+      transform: rotate(180deg);
     }
 
     .label .fold-line {
@@ -206,10 +212,6 @@
       right: 1em;
     }
 
-    .label.flipped {
-      transform: rotate(180deg);
-    }
-
     .label > .name {
       position: absolute;
       text-align: center;
@@ -218,7 +220,7 @@
       font-weight: bold;
       letter-spacing: -0.1em;
       line-height: 55%;
-      left: 1in;
+      left: .9in;
       top: .4in;
     }
 

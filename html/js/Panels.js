@@ -79,17 +79,14 @@ Panels.prototype.add = function (panel) {
 
 //    if (panel.name == '37D')
     this.inventory(panel);
-    // this.emitFixtureCodeFor(panel);
+    this.emitFixtureCodeFor(panel);
 };
 
 Panels.prototype.inventory = function (panel) {
     var segmentsByKey = {};
     var outlineSegments = panel.orderedOutlineSegments(segmentsByKey, this.allVertices);
 
-    console.log(panel.name, outlineSegments);
-    console.log(this.allVertices);
-
-//    console.log("Outline for " + panel.name + ":", outlineSegments);
+   console.log("Outline for " + panel.name + ":", outlineSegments);
 
     var lineGroup = new THREE.Object3D();
     lineGroup.position.add(panel.mesh.position);
@@ -117,7 +114,7 @@ Panels.prototype.inventory = function (panel) {
         var segmentKeyNorm = segmentsByKey[segmentKey].sort().join(",");
         normalizedOutlineSegments.push(segmentKeyNorm);
 
-        console.log(panel.name, segmentKeyNorm);
+        // console.log(panel.name, segmentKeyNorm);
         var panelsForEdge = this.panelsByEdge[segmentKeyNorm];
         if (panelsForEdge == null) {
             panelsForEdge = [];

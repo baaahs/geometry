@@ -140,7 +140,8 @@
       }
     }
 
-    .label {
+
+    .label, .qr-label {
       /*width: 4.3389in;  !* 3 11/16 *!*/
       /*height: 1.42222in;  !* 1 1/4 *!*/
       width: 4in;  /* 3 11/16 */
@@ -165,7 +166,7 @@
       z-index: -100;
     }
 
-    tr > .label {
+    tr > .label, tr > .qr-label {
       display: table-cell;
       border: 1px solid black;
     }
@@ -185,7 +186,7 @@
       z-index: -100;
     }
 
-    .label.hidden, .label.invisible {
+    .label.hidden, .label.invisible, .qr-label.hidden, .qr-label.invisible {
       display: none;
     }
 
@@ -377,6 +378,69 @@
       bottom: 2.5em;
       z-index: 100;
       border: 1px solid white;
+    }
+
+    .qr-label > .name {
+      position: absolute;
+      top: 1in;
+      font-size: 10pt;
+      transform: rotate(-90deg);
+    }
+
+    .qr-label .sticker {
+      position: absolute;
+      top: .25in
+    }
+
+    .qr-label > .sticker > .name {
+      position: absolute;
+      top: 7em;
+      font-size: 8pt;
+    }
+
+    .qr-label > .sticker > .url {
+      position: absolute;
+      top: 9em;
+      font-size: 7pt;
+    }
+
+    .qr-label .sticker0 {
+      left: 0.25in;
+    }
+
+    .qr-label .sticker1 {
+      left: 1.5in;
+    }
+
+    .qr-label .sticker2 {
+      left: 2.75in;
+    }
+
+    .qr-label .logo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: .15;
+      width: 1.125in;
+      z-index: -1;
+    }
+
+    .qr-label .qr-code {
+      position: absolute;
+      width: 4em;
+      height: 4em;
+      /*right: 6.5em;*/
+      /*bottom: 2.5em;*/
+      z-index: 100;
+      border: 1px solid white;
+    }
+
+    .qr-label .outline {
+      width: 100%;
+      height: 100%;
+      border-top: 1px solid grey;
+      border-bottom: 1px solid grey;
+      z-index: -100;
     }
 
     #labels-periodicity {
@@ -580,29 +644,32 @@
     }
 
     if (name == 'labels') {
+      var qr = true;
+
       if (labelViewer == null) {
         labelViewer = new LabelViewer(panels, document.getElementById('label-render-container'));
-//        labelViewer.qrCodes(100, 500);
-//        return;
+        if (qr) {
+          labelViewer.qrCodes(400 - 42, 600);
+        } else {
+          function filterLabels() {
+            labelViewer.filterLabels(new RegExp(labelsFilter.value));
+          }
 
-        function filterLabels() {
-          labelViewer.filterLabels(new RegExp(labelsFilter.value));
+          function multiLabels() {
+            labelViewer.labelsEvery(labelMultiple.checked ? parseFloat(labelPeriodicity.value) * 12 : 0);
+            filterLabels();
+          }
+
+          var labelsFilter = document.getElementById('labels-filter');
+          var labelPeriodicity = document.getElementById('labels-periodicity');
+          var labelMultiple = document.getElementById('labels-multiple');
+
+          labelsFilter.addEventListener('keyup', function(e) { filterLabels(); });
+          labelPeriodicity.addEventListener('keyup', function(e) { multiLabels(); });
+          labelMultiple.addEventListener('click', function(e) { multiLabels(); });
+
+          multiLabels();
         }
-
-        function multiLabels() {
-          labelViewer.labelsEvery(labelMultiple.checked ? parseFloat(labelPeriodicity.value) * 12 : 0);
-          filterLabels();
-        }
-
-        var labelsFilter = document.getElementById('labels-filter');
-        var labelPeriodicity = document.getElementById('labels-periodicity');
-        var labelMultiple = document.getElementById('labels-multiple');
-
-        labelsFilter.addEventListener('keyup', function(e) { filterLabels(); });
-        labelPeriodicity.addEventListener('keyup', function(e) { multiLabels(); });
-        labelMultiple.addEventListener('click', function(e) { multiLabels(); });
-
-        multiLabels();
       }
     }
 

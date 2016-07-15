@@ -74,7 +74,7 @@ Panel.prototype.flip = function (inverted) {
         var verts = [face.a, face.b, face.c];
         face.a = verts[2];
         face.c = verts[0];
-        console.log(face);
+        // console.log(face);
     });
     if (this.mesh.material.side == THREE.FrontSide) {
         this.mesh.material.side = THREE.BackSide;
@@ -259,11 +259,47 @@ Panel.prototype.orderedOutlineSegments = function (segmentsByKey, allVertices) {
         }
     }
 
+    var lineSegments = [];
+    var lineSegmentsHash = {};
+    function check(v1, v2) {
+        lineSegments.push([v1, v2]);
+        lineSegmentsHash[v1 + "," + v2] = true;
+    }
+
     this.geometry.faces.forEach(function (face) {
         check(face.a, face.b);
         check(face.b, face.c);
         check(face.c, face.a);
     });
+
+    var uniqueLineSegments = [];
+    for (var i = 0; i < lineSegments.length; i++) {
+        var lineSegment = lineSegments[i];
+        if (!(lineSegmentsHash[lineSegment[1] + "," + lineSegment[0]])) {
+            uniqueLineSegments.push(lineSegment);
+        }
+    }
+
+    var orderedOutlineSegments = [];
+    var curLineSegment = uniqueLineSegments.shift();
+    orderedOutlineSegments.push(curLineSegment);
+    while (uniqueLineSegments.length > 0) {
+        for (i = 0; i < uniqueLineSegments.length; i++) {
+            if (uniqueLineSegments[i][0] == curLineSegment[1]) {
+                curLineSegment = uniqueLineSegments[i];
+                uniqueLineSegments.splice(i, 1);
+                orderedOutlineSegments.push(curLineSegment);
+            }
+        }
+    }
+
+    var value = orderedOutlineSegments.map(function(segments) {
+        var v1 = segments[0];
+        var v2 = segments[1];
+        return modelVertexIds[v1] + "," + modelVertexIds[v2];
+    });
+    console.log("panel", this.name, "ordered:", value);
+    return value;
 
     var segmentMap = {};
     outlineSegments.forEach(function (segmentKey) {
@@ -307,6 +343,7 @@ Panel.prototype.orderedOutlineSegments = function (segmentsByKey, allVertices) {
         }.bind(this));
 
         var clockwise = sum > 0;
+        console.log("Panel " + this.name + " appears to have a sum of " + sum);
         if (clockwise) {
             // clockwise, so reverse everything…
             orderedOutlineSegments = orderedOutlineSegments.reverse();
@@ -452,10 +489,12 @@ Edge.prototype.angle = function () {
         var v2 = this.v2.clone().applyQuaternion(quaternion);
 
         var vector = v1.clone().sub(v2);
-        this.computedAngle_ = Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+        console.log("*******************", this.panel.name, this.otherPanel ? this.otherPanel.name : '?');
+        console.log(vector);
+        this.computedAngle_ = 360 - Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
 
         this.computedAngle_ = 0 - this.computedAngle_;
-        if (this.computedAngle_ < 0) this.computedAngle_ += 360;
+        while (this.computedAngle_ < 0) this.computedAngle_ += 360;
 
         // this.computedAngle_ -= 180;
         // if (this.computedAngle_ >= 360) this.computedAngle_ -= 360;

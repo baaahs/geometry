@@ -79,17 +79,11 @@ Panels.prototype.add = function (panel) {
 
 //    if (panel.name == '37D')
     this.inventory(panel);
-    // this.emitFixtureCodeFor(panel);
+    this.emitFixtureCodeFor(panel);
 };
 
 Panels.prototype.inventory = function (panel) {
-    var segmentsByKey = {};
-    var outlineSegments = panel.orderedOutlineSegments(segmentsByKey, this.allVertices);
-
-    console.log(panel.name, outlineSegments);
-    console.log(this.allVertices);
-
-//    console.log("Outline for " + panel.name + ":", outlineSegments);
+    var outlineSegments = panel.orderedOutlineSegments(this.allVertices);
 
     var lineGroup = new THREE.Object3D();
     lineGroup.position.add(panel.mesh.position);
@@ -97,11 +91,10 @@ Panels.prototype.inventory = function (panel) {
     var material = new THREE.LineBasicMaterial({color: lineColor, linewidth: 3});
     material.overdraw = 1;
 
-    outlineSegments.forEach(function (segmentKey) {
+    outlineSegments.forEach(function (vertices) {
         var outlineGeometry = new THREE.Geometry();
-        var segmentIds = segmentKey.split(",");
-        var v1 = this.allVertices.getById(segmentIds[0]).clone().sub(panel.mesh.position);
-        var v2 = this.allVertices.getById(segmentIds[1]).clone().sub(panel.mesh.position);
+        var v1 = this.allVertices.getById(vertices[0]).clone().sub(panel.mesh.position);
+        var v2 = this.allVertices.getById(vertices[1]).clone().sub(panel.mesh.position);
         outlineGeometry.vertices.push(v1);
         outlineGeometry.vertices.push(v2);
         //outlineGeometry.vertices.reverse();
@@ -113,11 +106,11 @@ Panels.prototype.inventory = function (panel) {
     panel.outline = lineGroup;
 
     var normalizedOutlineSegments = [];
-    outlineSegments.forEach(function (segmentKey) {
-        var segmentKeyNorm = segmentsByKey[segmentKey].sort().join(",");
+    outlineSegments.forEach(function (vertices) {
+        var segmentKeyNorm = vertices.slice().sort().join(",");
         normalizedOutlineSegments.push(segmentKeyNorm);
 
-        console.log(panel.name, segmentKeyNorm);
+        // console.log(panel.name, segmentKeyNorm);
         var panelsForEdge = this.panelsByEdge[segmentKeyNorm];
         if (panelsForEdge == null) {
             panelsForEdge = [];
@@ -128,11 +121,10 @@ Panels.prototype.inventory = function (panel) {
 
     // console.log('panel outline', panel.name, normalizedOutlineSegments);
 
-    panel.outerEdges = outlineSegments.map(function (segmentKey) {
-        var segmentIds = segmentKey.split(",");
-        var v1 = this.allVertices.getById(segmentIds[0]).clone();
-        var v2 = this.allVertices.getById(segmentIds[1]).clone();
-        return new Edge(panel, v1, v2, this.panelsByEdge, segmentIds.sort().join(","));
+    panel.outerEdges = outlineSegments.map(function (vertices) {
+        var v1 = this.allVertices.getById(vertices[0]).clone();
+        var v2 = this.allVertices.getById(vertices[1]).clone();
+        return new Edge(panel, v1, v2, this.panelsByEdge, vertices.slice().sort().join(","));
     }.bind(this));
 };
 

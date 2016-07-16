@@ -74,7 +74,6 @@ Panel.prototype.flip = function (inverted) {
         var verts = [face.a, face.b, face.c];
         face.a = verts[2];
         face.c = verts[0];
-        console.log(face);
     });
     if (this.mesh.material.side == THREE.FrontSide) {
         this.mesh.material.side = THREE.BackSide;
@@ -225,102 +224,42 @@ Panel.prototype.surfaceArea = function () {
     return 0;
 };
 
-Panel.prototype.orderedOutlineSegments = function (segmentsByKey, allVertices) {
+Panel.prototype.orderedOutlineSegments = function (allVertices) {
     var modelVertexIds = this.geometry.vertices.map(function (vertex) {
         var globalVertex = vertex.clone().add(this.mesh.position);
         return allVertices.idFor(globalVertex);
     }.bind(this));
 
-    // console.log('panel vertex global ids', panel.name, localVertexIds, panel.geometry.vertices.map(function (vertex) {
-    //     return vertex.clone().add(panel.mesh.position);
-    // }));
-
-
+    // count all segments between vertices
     var seenSegments = {};
-    var outlineSegments = [];
-
-    function check(v1, v2) {
-        // key has vertices re-ordered, so edges have unknown directionality
-        var segmentKey = modelVertexIds[v1] + "," + modelVertexIds[v2];
-        var segmentKeyAlt = modelVertexIds[v2] + "," + modelVertexIds[v1];
-
-        segmentsByKey[segmentKey] = [modelVertexIds[v1], modelVertexIds[v2]];
-        segmentsByKey[segmentKeyAlt] = [modelVertexIds[v2], modelVertexIds[v1]];
-        if (seenSegments[segmentKey] || seenSegments[segmentKeyAlt]) {
-            var i = outlineSegments.indexOf(segmentKey);
-            if (i != -1) outlineSegments.splice(i, 1);
-
-            i = outlineSegments.indexOf(segmentKeyAlt);
-            if (i != -1) outlineSegments.splice(i, 1);
-        } else {
-            outlineSegments.push(segmentKey);
-            seenSegments[segmentKey] = true;
-            seenSegments[segmentKeyAlt] = true;
-        }
+    function recordSegment(v1, v2) {
+        var normalizedPair = [modelVertexIds[v1], modelVertexIds[v2]].sort().join(",");
+        if (!seenSegments[normalizedPair]) seenSegments[normalizedPair] = 0;
+        seenSegments[normalizedPair]++;
     }
-
     this.geometry.faces.forEach(function (face) {
-        check(face.a, face.b);
-        check(face.b, face.c);
-        check(face.c, face.a);
+        recordSegment(face.a, face.b);
+        recordSegment(face.b, face.c);
+        recordSegment(face.c, face.a);
     });
 
-    var segmentMap = {};
-    outlineSegments.forEach(function (segmentKey) {
-        var segmentIds = segmentKey.split(",");
-        if (!segmentMap[segmentIds[0]]) {
-            segmentMap[segmentIds[0]] = [segmentIds[1]];
-        } else {
-            segmentMap[segmentIds[0]].push(segmentIds[1]);
+    // take all unique segments
+    var outlineSegments = [];
+    function takeSegmentIfUnique(v1, v2) {
+        var mv1 = modelVertexIds[v1];
+        var mv2 = modelVertexIds[v2];
+        var normalizedPair = [mv1, mv2].sort().join(",");
+        if (seenSegments[normalizedPair] == 1) {
+            outlineSegments.push([mv1, mv2]);
         }
-        if (!segmentMap[segmentIds[1]]) {
-            segmentMap[segmentIds[1]] = [segmentIds[0]];
-        } else {
-            segmentMap[segmentIds[1]].push(segmentIds[0]);
-        }
-    });
-
-    var orderedOutlineSegments = [];
-    if (outlineSegments.length > 0) {
-        var startVid = outlineSegments[0].split(",")[0];
-        var lastVid = null;
-        for (var i = 0; i < outlineSegments.length; i++) {
-            var dests = segmentMap[startVid];
-            if (!dests) {
-                console.log("huh? discontinuity for " + this.name + " at " + startVid);
-                break;
-            }
-            var nextVid = dests[0] == lastVid ? segmentMap[startVid][1] : segmentMap[startVid][0];
-            orderedOutlineSegments.push([startVid, nextVid]);
-            lastVid = startVid;
-            startVid = nextVid;
-        }
-
-        // ensure we're going counter-clockwise
-        var prevSegment = orderedOutlineSegments[orderedOutlineSegments.length - 1];
-
-        var sum = 0;
-        orderedOutlineSegments.forEach(function (segment) {
-            var fromV = allVertices.getById(segment[0]);
-            var toV = allVertices.getById(segment[1]);
-            sum += (toV.x - fromV.x) * (toV.y - fromV.y);
-        }.bind(this));
-
-        var clockwise = sum > 0;
-        if (clockwise) {
-            // clockwise, so reverse everything…
-            orderedOutlineSegments = orderedOutlineSegments.reverse();
-        }
-
-        orderedOutlineSegments = orderedOutlineSegments.map(function (segments) {
-            if (clockwise) {
-                return segments[1] + "," + segments[0];
-            } else {
-                return segments[0] + "," + segments[1];
-            }
-        })
     }
-    return orderedOutlineSegments;
+    this.geometry.faces.forEach(function (face) {
+        takeSegmentIfUnique(face.a, face.b);
+        takeSegmentIfUnique(face.b, face.c);
+        takeSegmentIfUnique(face.c, face.a);
+    });
+
+    return outlineSegments;
 };
 
 Panel.prototype.flattened = function() {
@@ -452,15 +391,11 @@ Edge.prototype.angle = function () {
         var v2 = this.v2.clone().applyQuaternion(quaternion);
 
         var vector = v1.clone().sub(v2);
-        this.computedAngle_ = Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
+        this.computedAngle_ = 180 - Math.atan2(vector.y, -vector.x) / (2 * Math.PI) * 360;
 
         this.computedAngle_ = 0 - this.computedAngle_;
-        if (this.computedAngle_ < 0) this.computedAngle_ += 360;
-
-        // this.computedAngle_ -= 180;
-        // if (this.computedAngle_ >= 360) this.computedAngle_ -= 360;
-        // if (this.computedAngle_ <= -360) this.computedAngle_ += 360;
-        // this.computedAngle_ = 0 - this.computedAngle_;
+        while (this.computedAngle_ < 0) this.computedAngle_ += 360;
+        while (this.computedAngle_ >= 360) this.computedAngle_ -= 360;
     }
 
     return this.computedAngle_;

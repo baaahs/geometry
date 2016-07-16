@@ -126,10 +126,18 @@
       width: .1875in;
     }
 
+    .print-only {
+      display: none !important;
+    }
+
     @media print {
       @page {
         margin-top: .875in;
         margin-bottom: .875in;
+      }
+
+      .print-only {
+        display: inherit !important;
       }
 
       #label-render-container {
@@ -199,6 +207,7 @@
       font-weight: bold;
       line-height: 100%;
       white-space: pre;
+      z-index: 2;
     }
 
     .flipped .label-vertex {
@@ -338,6 +347,7 @@
       text-shadow: 1px 1px 1px white, -1px -1px 1px white, 1px -1px 1px white, -1px 1px 1px white;
       text-align: center;
       z-index: 1;
+      background-color: rgba(255, 255, 255, .5);
     }
 
     .label .circle {
@@ -549,7 +559,7 @@
       <li>⌘P from Chrome</li>
       <ul>
         <li>Color: Color</li>
-        <li>Margins: Top=0.75", others=0</li>
+        <li>Margins: Top=0.85", others=0</li>
         <li>Options: ✓ Background graphics</li>
         <li>Open PDF in Preview</li>
       </ul>

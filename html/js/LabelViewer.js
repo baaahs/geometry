@@ -35,20 +35,31 @@ LabelViewer.prototype.generateLabels = function () {
 };
 
 LabelViewer.prototype.layoutLabels = function() {
-    var i = 0;
+    var index = 0;
     var tr = null;
-    this.container.innerHTML = '';
+    var container = this.container;
+    container.innerHTML = '';
+
+    function addCell(dom) {
+        if (index % 2 == 0) {
+            container.appendChild(tr = document.createElement("tr"))
+        } else {
+            var spacer = document.createElement("td");
+            spacer.classList.add("column-spacer");
+            tr.appendChild(spacer)
+        }
+        tr.appendChild(dom);
+        index++;
+    }
+
+    // we want a blank first page, for reasons
+    for (var j = 0; j < 14; j++) {
+        addCell(Label.prototype.createDiv("label print-only", "don't print this page"));
+    }
+
     this.labels.forEach(function(label) {
         if (label.visible) {
-            if (i % 2 == 0) {
-                this.container.appendChild(tr = document.createElement("tr"))
-            } else {
-                var spacer = document.createElement("td");
-                spacer.classList.add("column-spacer");
-                tr.appendChild(spacer)
-            }
-            tr.appendChild(label.dom);
-            i++;
+            addCell(label.dom);
         }
     }.bind(this));
 };

@@ -182,8 +182,8 @@ function Label(edge) {
             "z: " + vertexPositionNice(loc.z);
     }
 
-    this.dom.appendChild(this.createDiv('label-vertex right', vertexPosition(edge.v1)));
-    this.dom.appendChild(this.createDiv('label-vertex left', vertexPosition(edge.v2)));
+    this.dom.appendChild(this.createDiv('label-vertex left', vertexPosition(edge.v1)));
+    this.dom.appendChild(this.createDiv('label-vertex right', vertexPosition(edge.v2)));
 
     var outerCircle = this.createDiv('circle');
     outerCircle.classList.add('outer');

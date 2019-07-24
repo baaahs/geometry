@@ -69,6 +69,8 @@ function MapViewer(panels, container) {
     // centered in the view and leaves some space for overlay text.
 
     var model = this.panels.model;
+    model.rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI / 2 + Math.PI);
+
     var bounds = new THREE.Box3().setFromObject(model);
     var objCenter = bounds.center();
     console.log('bounding box:', bounds, 'center:', objCenter);

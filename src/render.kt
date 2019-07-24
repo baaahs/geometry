@@ -8,7 +8,7 @@ import java.io.File
 import java.util.*
 
 fun main(args: Array<String>) {
-  val file = File("./export-from-model.obj")
+  val file = File("./baaahs-model.obj")
 
   //  println("${model.faces.size} faces: ${model.faces}")
 

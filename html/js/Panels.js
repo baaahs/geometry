@@ -61,12 +61,16 @@ Panels.prototype.all = function () {
         var panel = panels[name];
         if (panel.isPanel()) all.push(panel);
     });
-    function normalizeName(panel) {
-        var re = /^([FR])?(\d+)([DP])?/.exec(panel.name);
-        return (re[1] == null ? "A" : re[1]) + re[3] + (re[2].length == 1 ? "0" + re[2] : re[2]);
+    function sortableName(panel) {
+        try {
+            var re = /^([FR])?(\d+)([DP])?/.exec(panel.name);
+            return (re[1] == null ? "A" : re[1]) + re[3] + (re[2].length === 1 ? "0" + re[2] : re[2]);
+        } catch (e) {
+            return "Z" + panel.name;
+        }
     }
     all.sort(function(a, b) {
-        return normalizeName(a).localeCompare(normalizeName(b));
+        return sortableName(a).localeCompare(sortableName(b));
     });
     return all;
 };

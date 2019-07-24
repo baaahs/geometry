@@ -46,17 +46,17 @@ Panel.prototype.computeFaceNormal = function () {
 };
 
 Panel.prototype.isPanel = function () {
-    return this.name != 'Face' && this.name != 'Tail' && this.name.indexOf('Ear') == -1 && this.name.indexOf('Eye') == -1;
+    return !this.name.match("^(Face|Tail|Ear)");
 };
 
 Panel.prototype.isSide = function () {
-    return this.name.indexOf('F') == -1 && this.name.indexOf('R') == -1;
+    return this.name.indexOf('F') === -1 && this.name.indexOf('R') === -1;
 };
 
 // some combination of F(ront), R(ear), S(ide), D(river), and (P)assenger
 Panel.prototype.isType = function (type) {
     var myType = (this.isSide() ? 'S' : '') + this.name.replace(/[0-9AB]+/, '');
-    return myType.indexOf(type) != -1;
+    return myType.indexOf(type) !== -1;
 };
 
 Panel.prototype.setVisibility = function (visible) {
@@ -75,9 +75,9 @@ Panel.prototype.flip = function (inverted) {
         face.a = verts[2];
         face.c = verts[0];
     });
-    if (this.mesh.material.side == THREE.FrontSide) {
+    if (this.mesh.material.side === THREE.FrontSide) {
         this.mesh.material.side = THREE.BackSide;
-    } else if (this.mesh.material.side == THREE.BackSide) {
+    } else if (this.mesh.material.side === THREE.BackSide) {
         this.mesh.material.side = THREE.FrontSide;
     }
     //this.mesh.needsUpdate = true;
@@ -249,7 +249,7 @@ Panel.prototype.orderedOutlineSegments = function (allVertices) {
         var mv1 = modelVertexIds[v1];
         var mv2 = modelVertexIds[v2];
         var normalizedPair = [mv1, mv2].sort().join(",");
-        if (seenSegments[normalizedPair] == 1) {
+        if (seenSegments[normalizedPair] === 1) {
             outlineSegments.push([mv1, mv2]);
         }
     }

@@ -181,13 +181,9 @@ function Label(edge) {
         return str.indexOf("'") == 1 ? " " + str : str;
     }
 
-    // sheep model is off center, sorry
-    var globalOffset = new THREE.Vector3(0, 0, -45.5);
-
     function vertexPosition(vertex) {
         var loc = edge.panel.mesh.position.clone();
         loc.add(vertex);
-        loc.add(globalOffset);
         return "x: " + vertexPositionNice(loc.x) + "\n" +
             "y: " + vertexPositionNice(loc.y) + "\n" +
             "z: " + vertexPositionNice(loc.z);

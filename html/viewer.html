@@ -149,7 +149,7 @@
     }
 
 
-    .label, .qr-label {
+    .label, .qr-label, .side-label {
       /*width: 4.3389in;  !* 3 11/16 *!*/
       /*height: 1.42222in;  !* 1 1/4 *!*/
       width: 4in;  /* 3 11/16 */
@@ -174,7 +174,7 @@
       z-index: -100;
     }
 
-    tr > .label, tr > .qr-label {
+    tr > .label, tr > .qr-label, tr > .side-label {
       display: table-cell;
       border: 1px solid black;
     }
@@ -194,7 +194,7 @@
       z-index: -100;
     }
 
-    .label.hidden, .label.invisible, .qr-label.hidden, .qr-label.invisible {
+    .label.hidden, .label.invisible, .qr-label.hidden, .qr-label.invisible, .side-label.hidden, .side-label.invisible {
       display: none;
     }
 
@@ -446,6 +446,81 @@
     }
 
     .qr-label .outline {
+      width: 100%;
+      height: 100%;
+      border-top: 1px solid grey;
+      border-bottom: 1px solid grey;
+      z-index: -100;
+    }
+
+    .side-label > .name {
+      position: absolute;
+      top: 1in;
+      font-size: 10pt;
+      transform: rotate(-90deg);
+    }
+
+    .side-label .sticker {
+      position: absolute;
+      top: .25in
+    }
+
+    .side-label > .sticker > .name {
+      position: absolute;
+      top: 2.5em;
+      right: -4.5em;
+      font-size: 16pt;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .side-label > .sticker > .name .side {
+      font-size: 85%;
+    }
+
+    .side-label > .sticker > .name .section {
+      font-size: 70%;
+      font-weight: normal;
+    }
+
+    .side-label > .sticker > .url {
+      position: absolute;
+      top: 9em;
+      font-size: 7pt;
+    }
+
+    .side-label .sticker0 {
+      left: 0.25in;
+    }
+
+    .side-label .sticker1 {
+      left: 1.5in;
+    }
+
+    .side-label .sticker2 {
+      left: 2.75in;
+    }
+
+    .side-label .logo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: .15;
+      width: 1.125in;
+      z-index: -1;
+    }
+
+    .side-label .qr-code {
+      position: absolute;
+      width: 3em;
+      height: 3em;
+      /*right: 6.5em;*/
+      /*bottom: 2.5em;*/
+      z-index: 100;
+      border: 1px solid white;
+    }
+
+    .side-label .outline {
       width: 100%;
       height: 100%;
       border-top: 1px solid grey;

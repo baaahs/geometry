@@ -19,6 +19,7 @@ LabelViewer.prototype.qrCodes = function (start, end) {
 
 LabelViewer.prototype.generateLabels = function () {
     this.labels = [];
+    var sideLabels = [];
     this.panels.all().forEach(function (panel) {
         //if (panel.name == '7P') {
         panel.edges().forEach(function(edge) {
@@ -31,6 +32,13 @@ LabelViewer.prototype.generateLabels = function () {
             }
         }.bind(this));
         //}
+
+        var sideLabel = new SideLabel(panel);
+        sideLabels.push(sideLabel);
+    }.bind(this));
+
+    sideLabels.forEach(function (sideLabel) {
+        this.labels.push(sideLabel);
     }.bind(this));
 };
 
@@ -260,6 +268,66 @@ QrLabel.prototype.createDiv = function (clazz, innerText) {
     }
     return div;
 };
+
+function SideLabel(panel) {
+    this.panel = panel;
+    this.dom = this.createDiv('side-label');
+    this.isVisible_ = true;
+
+    // this.dom.appendChild(this.createDiv('name', '' + number));
+
+    for (var i = 0; i < 3; i++) {
+        var name = panel.name;
+        var sticker = this.createDiv("sticker");
+        sticker.classList.add("sticker" + i);
+        this.dom.appendChild(sticker);
+
+        var nameDiv = this.createDiv('name');
+        var re = this.panel.name.match(/^([FR]?)(.+?)([DP]?)$/);
+        var nameClass = 'name' + this.panel.name.length;
+        var frontOrRear = re[1];
+        var panelNumber = re[2];
+        var side = re[3];
+        this.dom.classList.add('side-' + side.toLowerCase());
+        nameDiv.innerHTML = '<div class="name ' + nameClass + '"><span class="side">' + frontOrRear + '</span>' + panelNumber + '<span class="side">' + side + '</span></div>';
+        if (this.panel.info) {
+            var sectionClass = 'section';
+            if (this.panel.info.section.length > 10) {
+                sectionClass = 'section section10';
+            } else if (this.panel.info.section.length > 6) {
+                sectionClass = 'section section8';
+            }
+            nameDiv.innerHTML += '<div class="' + sectionClass + '">(' + this.panel.info.section + ')</div>';
+        }
+
+        sticker.appendChild(nameDiv);
+        // sticker.appendChild(this.createDiv('url', '' + assetUrl));
+
+        var logo = document.createElement('img');
+        logo.classList.add('logo');
+        logo.src = 'BAAAHS2015LogoWithBorder-320x272.png';
+        // logo.style.transform = 'rotate(' + upAngle + 'deg)';
+        sticker.appendChild(logo);
+
+        var qrCode = document.createElement('img');
+        qrCode.classList.add("qr-code");
+        var assetUrl = "http://baaahs.org/a/" + name;
+        var url = encodeURIComponent(assetUrl);
+        // var url = encodeURIComponent("http://192.168.1.150:9292/a/" + edge.panel.name);
+        qrCode.setAttribute("src", "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + url);
+        sticker.appendChild(qrCode);
+    }
+}
+
+SideLabel.prototype.createDiv = function (clazz, innerText) {
+    var div = document.createElement('div');
+    clazz.split(" ").forEach(function (className) { div.classList.add(className); });
+    if (innerText != null) {
+        div.innerText = innerText;
+    }
+    return div;
+};
+
 
 Object.defineProperty(Label.prototype, "visible", {
     get: function() {
